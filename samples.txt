@@ -1,0 +1,27 @@
+==Polish==
+
+===Pronunciation===
+{{pl-p}}
+
+===Noun===
+{{head|pl|noun|g=n}}
+
+# {{inflection of|pl|noun||case|p}}
+
+
+------------------------------------------------------------------------------------------------------
+
+Noun inflections
+
+|g=x = x gender
+|p = plural
+|s = singular
+
+nom = nominative
+gen = genitive
+dat = dative
+ins = instrumental
+voc = vocative
+loc = locative
+
+x//y = x and y
