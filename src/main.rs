@@ -11,6 +11,11 @@ fn main() {
     process("nożyk");
     process("bezwzględny");
     process("pierdolić");
+    process("pośredniak");
+    process("kolorowanka");
+    process("malowanka");
+    process("kraszanka");
+    process("pierdolony");
 //    process("większość_bezwzględna"); -> debug
 //    process("większość_absolutna"); -> debug
 }

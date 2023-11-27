@@ -29,7 +29,7 @@ fn table(input: &str) -> Vec<String> {
     return g[0..tbl_b_indx].to_vec();
 }
 
-fn find_links(bit: Vec<String>, wrd_type: WordType) -> Vec<(String, String)> {
+fn find_links(bit: Vec<String>, wrd_type: &WordType) -> Vec<(String, String)> {
     let to_check: &mut Vec<(String, String)> = &mut Vec::new();
 
     let (n_nom_pl, n_gen_sg, n_gen_pl, n_dat_sg, n_dat_pl, n_acc_sg, n_acc_pl, n_ins_sg, n_ins_pl, n_loc_sg, n_loc_pl, n_voc_sg, n_voc_pl) = (14, 19, 21, 26, 28, 33, 35, 40, 42, 47, 49, 54, 56);
@@ -51,9 +51,9 @@ fn find_links(bit: Vec<String>, wrd_type: WordType) -> Vec<(String, String)> {
     let p;
 
     match wrd_type {
-        Noun => p = n_slice,
-        Adjective => p = a_slice,
-        _ => p = n_slice,
+        &Noun => p = n_slice,
+        &Adjective => p = a_slice,
+        &_ => p = n_slice,
     };
 
     for (name, ind) in p {
@@ -157,13 +157,20 @@ pub fn process(wrd: &str) -> Vec<(String, String)> {
     println!("\tclass: {:?}", class);
 
     let x = table(&url_data);
-    let frm = wrd_dupe_filter(format(find_links(x, class)));
+    let frm = wrd_dupe_filter(format(find_links(x, &class)));
 
 
     if (&frm).len() == 0 {
         println!("\tAll forms of {} exist!", &wrd);
     } else {
-        println!("\texisting pages: {}/13", 13-(&frm).len());
+        let num = &mut 0;
+        match &class {
+            Noun => *num = 13,
+            Verb => *num = 10000,
+            Adjective => *num = 18,
+            TypeError => *num = 0
+        };
+        println!("\tTotal pages: {}", *num);
         println!("\tpages to create: {:?}", &frm);
     }
     return frm;
