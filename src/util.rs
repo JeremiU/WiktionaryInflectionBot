@@ -1,5 +1,23 @@
 use std::convert::TryInto;
 
+#[derive(Debug, Clone)]
+pub enum WordType {
+    Noun,
+    Verb,
+    Adjective,
+    TypeError
+}
+
+#[derive(Debug, Clone)]
+pub enum WordGender {
+    Feminine,
+    Neuter,
+    MasculineAnim,
+    MasculineInam,
+    MasculinePers,
+    Ungendered
+}
+
 pub fn raw_html(word: &str) -> String {
     let response = reqwest::blocking::get(format!("https://en.wiktionary.org/wiki/{word}#Polish"))
     .unwrap()
@@ -20,15 +38,7 @@ pub fn find_line(input_arr: &Vec<String>, term: &str) -> i32 {
     return -1;
 }
 
-pub fn vec_slice(input: &Vec<String>, start: usize, end: usize) -> Vec<String> {
-    let mut g: Vec<String> = Vec::new();
-    for i in start..end {
-        g.push(input[i].clone());
-    }
-    return g.to_vec();
-}
-
-pub fn str_split(input: String, split: &str) -> Vec<String> {
+pub fn str_split(input: &String, split: &str) -> Vec<String> {
     return input.split(split).map(String::from).collect::<Vec<_>>().to_vec();
 }
 
