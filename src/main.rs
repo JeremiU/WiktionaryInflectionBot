@@ -1,7 +1,10 @@
 ﻿mod manipulation;
 mod util;
+mod constants;
 
-use manipulation::process;
+pub use manipulation::*;
+pub use util::*;
+pub use constants::*;
 
 fn main() {
     process("wałówka");
@@ -9,8 +12,8 @@ fn main() {
     process("koń");
     process("kwadrat");
     process("nożyk");
-    process("bezwzględny");
-    process("pierdolić");
+//    process("bezwzględny");
+//    process("pierdolić");
 //    process("chodzić"); //impf-2/3
   //  process("srać"); //impf 3/3
 //    process("dosrać"); //pf
@@ -22,4 +25,6 @@ fn main() {
 //    process("pierdolony");
 //    process("większość_bezwzględna"); -> debug
 //    process("większość_absolutna"); -> debug
+//obiad
+//konitrut
 }
