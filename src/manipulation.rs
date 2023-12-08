@@ -1,15 +1,15 @@
 ﻿use std::convert::TryInto;
 
-use util::raw_html;
-use util::find_line;
-use util::str_split;
-use util::par_cont;
-use util::Word;
-use util::WordClass;
-use util::WordClass::*;
-use util::WordGender;
-use util::WordGender::*;
-use constants::*;
+use crate::util::raw_html;
+use crate::util::find_line;
+use crate::util::str_split;
+use crate::util::par_cont;
+use crate::util::Word;
+use crate::util::WordClass;
+use crate::util::WordClass::*;
+use crate::util::WordGender;
+use crate::util::WordGender::*;
+use crate::constants::*;
 
 fn entry(input: &str) -> Vec<String> {
     let lines = str_split(&input.to_string(), "\n");
