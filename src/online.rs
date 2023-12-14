@@ -80,8 +80,7 @@ pub async fn upload_wrd(wrd: &str) -> Result<(), reqwest::Error> {
 
     let wrd_data = manipulation::process(&client, &wrd).await;
     for i in 0..wrd_data.pages.len() {
-        let _ = edit_wiki_page(&client, wrd_data.pages[i].0.as_str(), wrd_data.pages[i].1.as_str(), &web_data, &csrf_token).await;
-
+        let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
         println!("Page: {:?}", wrd_data.inflected_words[i]);
     }
     Ok(())

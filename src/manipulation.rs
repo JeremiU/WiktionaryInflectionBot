@@ -18,7 +18,6 @@ use crate::util::WordNumericalCategory::*;
 use crate::constants::*;
 
 use regex::Regex;
-use reqwest::Identity;
 
 //pub - temp
 pub fn entry(input: &str) -> Vec<String> {
@@ -147,14 +146,14 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
         &_ => *p = ID_PAIRS_NOUN.to_vec(),
     };
     
-    for (inflected_word, ind) in p {
+    for (key, ind) in p {
         let str_p = &bit[(*ind) as usize];
         
         let st = &str_p[(str_p.find("<a ").unwrap())..];
         let k = str_split(st, "href=");
 
         for i in 1..k.len() {
-            let mut keys = String::new();
+            let mut inflected_word = String::new();
             let mut notes = String::new();
 
             let pat_wrd = Regex::new(r">([^<]*)</a>").unwrap();
@@ -166,7 +165,7 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
             if let Some(captures) = pat_wrd.captures(&k[i]) {
                 if let Some(matched_text) = captures.get(1) {
                     let extracted_text = matched_text.as_str();
-                    keys = extracted_text.to_string();
+                    inflected_word = extracted_text.to_string();
                 }
             } else {
                 panic!("ERR extr wrd: {}", k[i]);
@@ -192,7 +191,7 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
                 }
             }
 
-            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys, notes});
+            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes});
         }
     }
     return to_check.to_vec();

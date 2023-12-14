@@ -174,7 +174,7 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
         _ => {},
     }
 
-    return Page {title: inflected_data.inflected_word, body: page_markup};
+    return Page {title: inflected_data.inflected_word.clone(), body: page_markup};
 }
 
 pub fn gen_pg(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
