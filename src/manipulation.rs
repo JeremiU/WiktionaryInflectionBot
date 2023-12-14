@@ -1,26 +1,21 @@
 ﻿use std::convert::TryInto;
 
 use crate::InflectionData;
-use crate::util;
 use crate::util::raw_html;
 use crate::util::find_line;
 use crate::util::str_split;
 use crate::util::par_cont;
-use crate::util::Lemma;
-use crate::util::Page;
-use crate::util::Word;
-use crate::util::WordClass;
-use crate::util::WordClass::*;
-use crate::util::WordGender;
-use crate::util::WordGender::*;
-use crate::util::WordNumericalCategory;
-use crate::util::WordNumericalCategory::*;
 use crate::constants::*;
+use crate::data_formats::*;
+use crate::data_formats::WordClass::*;
+use crate::data_formats::WordGender::*;
+use crate::data_formats::WordNumericalCategory::*;
+use crate::page_generation::*;
 
 use regex::Regex;
 
 //pub - temp
-pub fn entry(input: &str) -> Vec<String> {
+fn entry(input: &str) -> Vec<String> {
     let lines = str_split(&input.to_string(), "\n");
     
     let start: usize = find_line(&lines, HTML_PL_HEADER).try_into().unwrap();
@@ -160,8 +155,6 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
             let pat_dep = Regex::new(r"(deprecative)").unwrap();
             let pat_arc = Regex::new(r"(archaic)").unwrap();
 
-            // println!("|{}|\n", &k[i]);
-
             if let Some(captures) = pat_wrd.captures(&k[i]) {
                 if let Some(matched_text) = captures.get(1) {
                     let extracted_text = matched_text.as_str();
@@ -212,15 +205,6 @@ fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
     return filtered.to_vec();
 }
 
-fn gen_pg(lemma: &Lemma, inflected_words: &Vec<InflectionData>) -> Vec<Page> {
-    let mut pgs = Vec::new();
-
-    for inflected_word in inflected_words {
-        pgs.push(util::gen_pg(lemma, inflected_word));
-    }
-    return pgs;
-}
-
 async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<InflectionData>  {
     let mut no_dupes: Vec<InflectionData> = Vec::new();
 
@@ -249,9 +233,13 @@ async fn prep_word(client: &reqwest::Client, word: &str) -> Word {
 
     let lemma = Lemma {word : word.clone(), gender, class, num_cat};
 
-    let pages = gen_pg(&lemma, &inflected_words);
+    let mut pgs = Vec::new();
 
-    return Word {lemma: lemma.clone(), inflected_words, pages};
+    for inflected_word in &inflected_words {
+        pgs.push(gen_pg(&lemma, &inflected_word));
+    }
+
+    return Word {lemma: lemma.clone(), inflected_words, pages : pgs.clone()};
 }
 
 //entry point

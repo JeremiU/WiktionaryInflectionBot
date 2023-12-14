@@ -3,7 +3,6 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
-use std::collections::HashMap;
 
 use crate::manipulation;
 
@@ -39,38 +38,31 @@ fn extract_csrf(json_str: &str) -> Option<String> {
 }
 
 async fn csrf_token(client: &reqwest::Client, web_data: &WebData) -> Result<String, reqwest::Error> {
-    let response = client.post(&web_data.api_url)
-    .header("Authorization", format!("Bearer {}", &web_data.acc_tok))
-    .form(&[("action", "query"), ("meta", "tokens"), ("format", "json"), ("formatversion", "2")])
-    .send()
-    .await?;
-
-    let bd = response.text().await?;
-    Ok(extract_csrf(&bd).unwrap())
+    let body = make_call(client, &[("action", "query"), ("meta", "tokens")], web_data).await.unwrap();
+    Ok(extract_csrf(&body).unwrap())
 }
 
 async fn edit_wiki_page(client: &reqwest::Client, infl_wrd: &str, txt: &str, web_data: &WebData, csrf_token: &str) -> Result<(), reqwest::Error> {
-    let mut params = HashMap::new();
-    params.insert("action", "edit");
-    params.insert("title", &infl_wrd);
-    params.insert("appendtext", &txt);
-    params.insert("summary", "Added inflection page");
-    params.insert("tags","");
-    params.insert("bot", "1");
-//    params.insert("createonly", "1"); //will not update if exists
-    params.insert("contentmodel","wikitext");
-    params.insert("token", &csrf_token);
-    params.insert("formatversion", "2");
-    
-    let response = client.post(&web_data.api_url)
-        .header("Authorization", format!("Bearer {}", web_data.acc_tok))
-        .form(&params)
-        .send()
-        .await?;
-
-    println!("Status: {}", response.status());
+    let params = &[("action", "edit"), ("title", &infl_wrd), 
+    ("appendtext", &txt), ("summary", "Added inflection page"), ("tags", ""), ("bot", "1"), 
+    ("contentmodel","wikitext"), ("token", &csrf_token)];
+    let _ = make_call(client, params, web_data);
     
     Ok(())
+}
+
+async fn make_call(client: &reqwest::Client, params: &[(&str, &str)], web_data: &WebData) -> Result<String, reqwest::Error> {
+    let mut params = params.to_vec();
+    params.extend_from_slice(&[("format", "json"), ("formatversion", "2")]);
+
+    let response = client.post(&web_data.api_url)
+    .header("Authorization", format!("Bearer {}", &web_data.acc_tok))
+    .form(&params)
+    .send()
+    .await?;
+
+    let body = response.text().await?;
+    return Ok(body);
 }
 
 pub async fn upload_wrd(wrd: &str) -> Result<(), reqwest::Error> {
