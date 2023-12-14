@@ -1,10 +1,13 @@
 ﻿use std::convert::TryInto;
 
+use crate::InflectionData;
 use crate::util;
 use crate::util::raw_html;
 use crate::util::find_line;
 use crate::util::str_split;
 use crate::util::par_cont;
+use crate::util::Lemma;
+use crate::util::Page;
 use crate::util::Word;
 use crate::util::WordClass;
 use crate::util::WordClass::*;
@@ -15,6 +18,7 @@ use crate::util::WordNumericalCategory::*;
 use crate::constants::*;
 
 use regex::Regex;
+use reqwest::Identity;
 
 //pub - temp
 pub fn entry(input: &str) -> Vec<String> {
@@ -117,9 +121,10 @@ fn num_cat(raw_html: &Vec<String>) -> WordNumericalCategory {
     return num_cat.clone();
 }
 
-fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<(String, String, String)> {
-    let to_check: &mut Vec<(String, String, String)> = &mut Vec::new();
+fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
+    let to_check: &mut Vec<InflectionData> = &mut Vec::new();
     let p: &mut Vec<(&str, i32)> = &mut Vec::new();
+   
     match wrd_type {
         &Noun => {
             if bit.len() >= 57 {
@@ -139,18 +144,18 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<(String, String, S
                     *p = ID_PAIRS_VB_PFT.to_vec();       
                 }
             }
-        &_ => *p = ID_PAIRS_NOUN.to_vec(), //to fix
+        &_ => *p = ID_PAIRS_NOUN.to_vec(),
     };
     
-    for (name, ind) in p {
+    for (inflected_word, ind) in p {
         let str_p = &bit[(*ind) as usize];
         
         let st = &str_p[(str_p.find("<a ").unwrap())..];
         let k = str_split(st, "href=");
 
         for i in 1..k.len() {
-            let mut k_wrd = "";
-            let mut k_note = String::new();
+            let mut keys = String::new();
+            let mut notes = String::new();
 
             let pat_wrd = Regex::new(r">([^<]*)</a>").unwrap();
             let pat_dep = Regex::new(r"(deprecative)").unwrap();
@@ -161,7 +166,7 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<(String, String, S
             if let Some(captures) = pat_wrd.captures(&k[i]) {
                 if let Some(matched_text) = captures.get(1) {
                     let extracted_text = matched_text.as_str();
-                    k_wrd = extracted_text;
+                    keys = extracted_text.to_string();
                 }
             } else {
                 panic!("ERR extr wrd: {}", k[i]);
@@ -172,7 +177,7 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<(String, String, S
                     if let Some(matched_text) = captures.get(1) {
                         let extracted_text = matched_text.as_str();
                         println!("ALT: {}", extracted_text);
-                        k_note = format!("deprecative-{}", &extracted_text);
+                        notes = format!("deprecative-{}", &extracted_text);
                     }
                 }
             }
@@ -182,59 +187,58 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<(String, String, S
                     if let Some(matched_text) = captures.get(1) {
                         let extracted_text = matched_text.as_str();
                         println!("ALT: {}", extracted_text);
-                        k_note = format!("archaic-{}", &extracted_text);
+                        notes = format!("archaic-{}", &extracted_text);
                     }    
                 }
             }
 
-            to_check.push((name.to_string(), k_wrd.to_string(), k_note.to_string()));
+            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys, notes});
         }
     }
     return to_check.to_vec();
 }
 
 /// Filters duplicate entries, i.e. where multiple inflections are indentical
-fn wrd_dupe_filter(bit: Vec<(String, String, String)>) -> Vec<(String, String, String)> {
-    let filtered: &mut Vec<(String, String, String)> = &mut Vec::new();
+fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
+    let filtered: &mut Vec<InflectionData> = &mut Vec::new();
     
-    for (k, v, n) in bit {
-        if par_cont(filtered, &v.to_string()) {
-            let indx = filtered.iter().position(|(_, v2,_)| v2 == &v).unwrap();
-
-            let (old_k, _, _) = &filtered[indx];
-            filtered[indx] = (k + "/" + &old_k, v, n);
+    for id in bit {
+        if par_cont(filtered, &id.inflected_word) {
+            let indx = filtered.iter().position(|i| i.inflected_word == id.inflected_word).unwrap();
+            filtered[indx] = InflectionData {keys: id.keys + "/" + &filtered[indx].keys, ..id};
         } else {
-            filtered.push((k, v, n));        
+            filtered.push(id);        
         }
     }
     return filtered.to_vec();
 }
 
-fn gen_pg(word: &str, class: &WordClass, inflected_words: &Vec<(String, String, String)>, num_cat: &WordNumericalCategory, gender: &WordGender) -> Vec<(String, String)> {
+fn gen_pg(lemma: &Lemma, inflected_words: &Vec<InflectionData>) -> Vec<Page> {
     let mut pgs = Vec::new();
-    let word = word.replace("_", " ");
 
     for inflected_word in inflected_words {
-        pgs.push(util::gen_pg(word.to_string(), inflected_word.clone(), class, num_cat, gender));
+        pgs.push(util::gen_pg(lemma, inflected_word));
     }
     return pgs;
 }
 
-async fn no_dupes(client: &reqwest::Client, list: Vec<(String, String, String)>) -> Vec<(String, String, String)>  {
-    let mut no_dupes: Vec<(String, String, String)> = Vec::new();
+async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<InflectionData>  {
+    let mut no_dupes: Vec<InflectionData> = Vec::new();
 
-    for (k, v, n) in list {
-        let lines = str_split(raw_html(client, &v).await.as_str(), "\n");
+    for id in list {
+        let lines = str_split(raw_html(client, &id.inflected_word).await.as_str(), "\n");
         if find_line(&lines, HTML_PL_HEADER) == -1 {
-            no_dupes.push((k,v,n));
+            no_dupes.push(id);
         }
     }
     return no_dupes.clone();
 }
 
 /// Takes in a word, returns a pair (word, Vec<(subword, subtype)>, Gender, Type)
-async fn prep_word(client: &reqwest::Client, word: String) -> Word {
-    let raw_html: Vec<String> = entry(&raw_html(&client, &word).await);
+async fn prep_word(client: &reqwest::Client, word: &str) -> Word {
+    let raw_html: Vec<String> = entry(&raw_html(&client, word).await);
+
+    let word = word.replace("_", " ");
 
     let gender = gender(&raw_html);
     let class = class(&raw_html);
@@ -244,23 +248,27 @@ async fn prep_word(client: &reqwest::Client, word: String) -> Word {
 
     let inflected_words = no_dupes(client, wrd_dupe_filter(find_links(&table, &class))).await;
 
-    let pages = gen_pg(&word, &class, &inflected_words, &num_cat, &gender);
-    return Word {word, inflected_words, gender, class, num_cat, pages};
+    let lemma = Lemma {word : word.clone(), gender, class, num_cat};
+
+    let pages = gen_pg(&lemma, &inflected_words);
+
+    return Word {lemma: lemma.clone(), inflected_words, pages};
 }
 
+//entry point
 pub async fn process(client: &reqwest::Client, wrd: &str) -> Word {
-    let word_data = prep_word(&client, wrd.to_string()).await;
+    let word_data = prep_word(&client, wrd).await;
 
-    println!("word: {}", &word_data.word);
-    println!("\tgender: {:?}", &word_data.gender);
-    println!("\tclass: {:?}", &word_data.class);    
+    println!("word: {}", word_data.lemma.word);
+    println!("\tgender: {:?}", word_data.lemma.gender);
+    println!("\tclass: {:?}", word_data.lemma.class);    
 
-    if (&word_data.inflected_words).len() == 0 {
+    if (word_data.inflected_words).len() == 0 {
         println!("All forms of {} exist!", &wrd);
     } else {
 
         let num = &mut 0;
-        match &word_data.class {
+        match word_data.lemma.class {
             Adjective => *num = 18,
             Noun => *num = 13,
             Verb => *num = 40,

@@ -10,7 +10,7 @@ pub use online::*;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
-    let c = vec!["tektura","tekturka"];
+    let c = vec!["adornacja","ozdoba"];
 
     for i in c {
         let _ = online::upload_wrd(i).await;

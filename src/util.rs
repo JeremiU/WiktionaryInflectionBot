@@ -4,7 +4,7 @@ use strum::{EnumString, Display};
 use crate::util::WordClass::*;
 use crate::util::WordNumericalCategory::*;
 
-#[derive(Debug, Clone, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordClass {
     Noun,
     Verb,
@@ -12,7 +12,7 @@ pub enum WordClass {
     TypeError
 }
 
-#[derive(Debug, Clone, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordGender {
     Feminine,
     Neuter,
@@ -35,7 +35,7 @@ impl WordGender {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, EnumString, Display)]
+#[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordNumericalCategory {
     Singular,
     Plural,
@@ -43,13 +43,33 @@ pub enum WordNumericalCategory {
     Noncountable,
     NumericalCategoryError
 }
+
+#[derive(Clone)]
 pub struct Word {
+    pub lemma: Lemma,
+    pub inflected_words: Vec<InflectionData>, // cat - pg - note
+    pub pages: Vec<Page>
+}
+
+#[derive(Clone)]
+pub struct Lemma {
     pub word: String,
-    pub inflected_words: Vec<(String, String, String)>, // cat - pg - note
     pub gender: WordGender,
     pub class: WordClass,
-    pub num_cat: WordNumericalCategory,
-    pub pages: Vec<(String, String)>
+    pub num_cat: WordNumericalCategory,    
+}
+
+#[derive(Clone, Debug)]
+pub struct InflectionData {
+    pub inflected_word: String,
+    pub keys: String,
+    pub notes: String
+}
+
+#[derive(Clone)]
+pub struct Page {
+    pub title: String,
+    pub body: String
 }
 
 pub async fn raw_html(client: &reqwest::Client, word: &str) -> String {
@@ -78,12 +98,11 @@ pub fn str_cut(string: &str, i: usize, j: usize) -> String {
     return (&string.char_indices().clone().skip(i).take(j)).clone().map(|(_, c)| c).collect();
 }
 
-pub fn par_cont<T: std::cmp::PartialEq>(pair: &Vec<(T, T, T)>, val: &T) -> bool {
+pub fn par_cont(pair: &Vec<InflectionData>, val: &str) -> bool {
     let mut cont = false;
 
     for p in pair {
-        let (_, v,_) = p;        
-        if v.eq(val) || v == val {
+        if p.inflected_word.eq(val) || p.inflected_word == val {
             cont = true;
         }
     }
@@ -111,18 +130,17 @@ fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     return page_markup;
 }
 
-fn gen_noun(base_word: String, inflected_data: (String, String, String), num_cat: &WordNumericalCategory, gender: &WordGender) -> (String, String) {
-    let (keys, inflected_word, notes) = inflected_data;    
-    let mut page_markup: String = gen_pg_hd(&Noun, &notes);
+fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
+    let mut page_markup: String = gen_pg_hd(&Noun, &inflected_data.notes);
 
-    page_markup.push_str(["{{head|pl|noun form|g=", gender.value(), "}}\n"].join("").as_str());
+    page_markup.push_str(["{{head|pl|noun form|g=", lemma.gender.value(), "}}\n"].join("").as_str());
     page_markup.push_str("\n");
 
 
     let mut sg: Vec<String> = Vec::new();
     let mut pl: Vec<String> = Vec::new();
 
-    for key in str_split(&keys, "/") {
+    for key in str_split(&inflected_data.keys, "/") {
         if key.ends_with("pl") {
             pl.push(str_split(&key, "_")[0].to_owned());
         } else {
@@ -132,38 +150,38 @@ fn gen_noun(base_word: String, inflected_data: (String, String, String), num_cat
 
     let mut note_prefix = String::new();
 
-    if notes.len() > 0 {
-        note_prefix = format!("{{{{lb|pl|{}}}}}", str_split(&notes, "-")[0]);
+    if inflected_data.notes.len() > 0 {
+        note_prefix = format!("{{{{lb|pl|{}}}}}", str_split(&inflected_data.notes, "-")[0]);
     }
     
-    match num_cat {
+    match lemma.num_cat {
         Both => {
             if sg.len() > 0 && pl.len() > 0 {
-                let str = format!("#{} {{{{inflection of|pl|{}||{}|s|;|{}|p}}}}\n", note_prefix, base_word, sg.join("//"), pl.join("//"));
+                let str = format!("#{} {{{{inflection of|pl|{}||{}|s|;|{}|p}}}}\n", note_prefix, lemma.word, sg.join("//"), pl.join("//"));
                 page_markup.push_str(&str);    
             } else if sg.len() > 0 {
-                page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|s}}}}\n", note_prefix, base_word, sg.join("//")).as_str());
+                page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|s}}}}\n", note_prefix, lemma.word, sg.join("//")).as_str());
             } else if pl.len() > 0 {
-                page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|p}}}}\n", note_prefix, base_word, pl.join("//")).as_str());
+                page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|p}}}}\n", note_prefix, lemma.word, pl.join("//")).as_str());
             }
         },
         Singular => {
-            page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|s}}}}\n", note_prefix, base_word, sg.join("//")).as_str());
+            page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|s}}}}\n", note_prefix, lemma.word, sg.join("//")).as_str());
         },
         Plural => {
-            page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|p}}}}\n", note_prefix, base_word, pl.join("//")).as_str());
+            page_markup.push_str(format!("#{} {{{{inflection of|pl|{}||{}|p}}}}\n", note_prefix, lemma.word, pl.join("//")).as_str());
         },
         _ => {},
     }
 
-    return (inflected_word, page_markup);
+    return Page {title: inflected_data.inflected_word, body: page_markup};
 }
 
-pub fn gen_pg(base_word: String, inflected_word: (String, String, String), class: &WordClass, num_cat: &WordNumericalCategory, gender: &WordGender) -> (String, String) {
-    match &class {
-       Noun => gen_noun(base_word, inflected_word, num_cat, gender),
-       Verb => ("".to_string(), "".to_string()),
-       Adjective => ("".to_string(), "".to_string()),
-       _ => ("".to_string(), "".to_string()), 
+pub fn gen_pg(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
+    match &lemma.class {
+       Noun => gen_noun(lemma, inflected_data),
+       Verb => Page { title: "".to_string(), body: "".to_string()},
+       Adjective => Page { title: "".to_string(), body: "".to_string()},
+       _ => Page { title: "".to_string(), body: "".to_string()}, 
     }
 }
