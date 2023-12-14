@@ -69,7 +69,7 @@ async fn edit_wiki_page(client: &reqwest::Client, infl_wrd: &str, txt: &str, web
         .await?;
 
     println!("Status: {}", response.status());
-     
+    
     Ok(())
 }
 

@@ -37,6 +37,8 @@ pub fn entry(input: &str) -> Vec<String> {
 
 /// Narrows down the input block into just the inflection table data. If you want to print to find new indices, do it here
 fn table(k: &Vec<String>) -> Vec<String> {
+    //check if multiple tables
+
     let tbl_a_indx = find_line(&k, HTML_INF_TBL).try_into().unwrap();
 
     let g = k[tbl_a_indx..].to_vec();
@@ -208,12 +210,12 @@ fn wrd_dupe_filter(bit: Vec<(String, String, String)>) -> Vec<(String, String, S
     return filtered.to_vec();
 }
 
-fn gen_pg(word: &str, class: &WordClass, inflected_words: &Vec<(String, String, String)>, num_cat: &WordNumericalCategory) -> Vec<(String, String)> {
+fn gen_pg(word: &str, class: &WordClass, inflected_words: &Vec<(String, String, String)>, num_cat: &WordNumericalCategory, gender: &WordGender) -> Vec<(String, String)> {
     let mut pgs = Vec::new();
     let word = word.replace("_", " ");
 
     for inflected_word in inflected_words {
-        pgs.push(util::gen_pg(word.to_string(), inflected_word.clone(), class, num_cat));
+        pgs.push(util::gen_pg(word.to_string(), inflected_word.clone(), class, num_cat, gender));
     }
     return pgs;
 }
@@ -242,25 +244,20 @@ async fn prep_word(client: &reqwest::Client, word: String) -> Word {
 
     let inflected_words = no_dupes(client, wrd_dupe_filter(find_links(&table, &class))).await;
 
-    let pages = gen_pg(&word, &class, &inflected_words, &num_cat);
-
-    println!("\n\nPages");
-    for p in &pages {
-        println!("{:?}", p);
-        println!("\n");
-    }
-
+    let pages = gen_pg(&word, &class, &inflected_words, &num_cat, &gender);
     return Word {word, inflected_words, gender, class, num_cat, pages};
 }
 
 pub async fn process(client: &reqwest::Client, wrd: &str) -> Word {
     let word_data = prep_word(&client, wrd.to_string()).await;
+
+    println!("word: {}", &word_data.word);
+    println!("\tgender: {:?}", &word_data.gender);
+    println!("\tclass: {:?}", &word_data.class);    
+
     if (&word_data.inflected_words).len() == 0 {
         println!("All forms of {} exist!", &wrd);
     } else {
-        println!("word: {}", &word_data.word);
-        println!("\tgender: {:?}", &word_data.gender);
-        println!("\tclass: {:?}", &word_data.class);    
 
         let num = &mut 0;
         match &word_data.class {

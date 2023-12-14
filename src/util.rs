@@ -21,6 +21,20 @@ pub enum WordGender {
     MasculinePers,
     Ungendered
 }
+
+impl WordGender {
+    fn value(&self) -> &str {
+        return match *self {
+            WordGender::Feminine => "f",
+            WordGender::Neuter => "n",
+            WordGender::MasculinePers => "m-pr",
+            WordGender::MasculineAnim => "m-an",
+            WordGender::MasculineInam => "m-in",
+            _ => "",
+        };
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, EnumString, Display)]
 pub enum WordNumericalCategory {
     Singular,
@@ -79,7 +93,8 @@ pub fn par_cont<T: std::cmp::PartialEq>(pair: &Vec<(T, T, T)>, val: &T) -> bool 
 fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     let mut page_markup: String = String::new();
 
-    page_markup.push_str("\n==Polish==\n");
+    //if exists, \n
+    page_markup.push_str("==Polish==\n");
     page_markup.push_str("\n");
 
     if notes.len() > 0 {
@@ -93,17 +108,16 @@ fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     page_markup.push_str("\n");
     page_markup.push_str(format!("==={}===\n", class).as_str());
 
-    //add gender
-    page_markup.push_str(["{{head|pl|",format!("{}", class.to_string().to_lowercase()).as_str()," form}}\n"].join("").as_str());
-    
-    page_markup.push_str("\n");
-
     return page_markup;
 }
 
-fn gen_noun(base_word: String, inflected_data: (String, String, String), num_cat: &WordNumericalCategory) -> (String, String) {
+fn gen_noun(base_word: String, inflected_data: (String, String, String), num_cat: &WordNumericalCategory, gender: &WordGender) -> (String, String) {
     let (keys, inflected_word, notes) = inflected_data;    
     let mut page_markup: String = gen_pg_hd(&Noun, &notes);
+
+    page_markup.push_str(["{{head|pl|noun form|g=", gender.value(), "}}\n"].join("").as_str());
+    page_markup.push_str("\n");
+
 
     let mut sg: Vec<String> = Vec::new();
     let mut pl: Vec<String> = Vec::new();
@@ -145,9 +159,9 @@ fn gen_noun(base_word: String, inflected_data: (String, String, String), num_cat
     return (inflected_word, page_markup);
 }
 
-pub fn gen_pg(base_word: String, inflected_word: (String, String, String), class: &WordClass, num_cat: &WordNumericalCategory) -> (String, String) {
+pub fn gen_pg(base_word: String, inflected_word: (String, String, String), class: &WordClass, num_cat: &WordNumericalCategory, gender: &WordGender) -> (String, String) {
     match &class {
-       Noun => gen_noun(base_word, inflected_word, num_cat),
+       Noun => gen_noun(base_word, inflected_word, num_cat, gender),
        Verb => ("".to_string(), "".to_string()),
        Adjective => ("".to_string(), "".to_string()),
        _ => ("".to_string(), "".to_string()), 
