@@ -1,8 +1,10 @@
+use serde::{Serialize, Deserialize};
 use strum::{EnumString, Display};
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordClass {
     Noun,
+    ProperNoun,
     Verb,
     Adjective,
     TypeError
@@ -15,6 +17,7 @@ pub enum WordGender {
     MasculineAnim,
     MasculineInam,
     MasculinePers,
+    NVir,
     Ungendered
 }
 
@@ -36,20 +39,21 @@ pub enum WordNumericalCategory {
     Singular,
     Plural,
     Both,
-    Noncountable,
-    NumericalCategoryError
+    NonNoun
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Word {
     pub lemma: Lemma,
+    pub wiki_data: WikiContent,
     pub inflected_words: Vec<InflectionData>, // cat - pg - note
     pub pages: Vec<Page>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Lemma {
     pub word: String,
+    pub pronounciation: String,
     pub gender: WordGender,
     pub class: WordClass,
     pub num_cat: WordNumericalCategory,    
@@ -62,8 +66,34 @@ pub struct InflectionData {
     pub notes: String
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Page {
     pub title: String,
     pub body: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WikiLink {
+    #[serde(rename = "title")]
+    pub word: String,
+    pub exists: bool
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Parse {
+    #[serde(rename = "title")]
+    pub word: String,
+    // #[serde(rename = "pageid")]
+    // pub page_id: i32,
+    #[serde(rename = "text")]
+    pub html_text: String,
+    pub links: Vec<WikiLink>,
+    // pub showtoc: bool,
+    #[serde(rename = "wikitext")]
+    pub wiki_text: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WikiContent {
+    pub parse: Parse
 }

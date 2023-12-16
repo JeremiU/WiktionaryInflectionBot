@@ -16,7 +16,7 @@ fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     page_markup.push_str("===Pronunciation===\n");
     page_markup.push_str("{{pl-p}}\n");
     page_markup.push_str("\n");
-    page_markup.push_str(format!("==={}===\n", class).as_str());
+    page_markup.push_str(format!("==={}===\n", class.to_string().replace("_", " ")).as_str());
 
     return page_markup;
 }
@@ -63,6 +63,12 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
         },
         _ => {},
     }
+
+    return Page {title: inflected_data.inflected_word.clone(), body: page_markup};
+}
+
+fn gen_adj(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
+    let mut page_markup: String = gen_pg_hd(&Adjective, &inflected_data.notes);
 
     return Page {title: inflected_data.inflected_word.clone(), body: page_markup};
 }

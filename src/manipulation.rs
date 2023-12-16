@@ -11,10 +11,10 @@ use crate::data_formats::WordClass::*;
 use crate::data_formats::WordGender::*;
 use crate::data_formats::WordNumericalCategory::*;
 use crate::page_generation::*;
+use crate::wikt_text;
 
 use regex::Regex;
 
-//pub - temp
 fn entry(input: &str) -> Vec<String> {
     let lines = str_split(&input.to_string(), "\n");
     
@@ -45,74 +45,69 @@ fn table(k: &Vec<String>) -> Vec<String> {
     return g[0..tbl_b_indx].to_vec();
 }
 
-fn gender(raw_html: &Vec<String>) -> WordGender {
-    let k = &mut 0;
-
-    for _x in 0..raw_html.len() {
-        if raw_html[_x].contains(HTML_GENDER) {
-            *k = _x;
-            break;
-        }
-    }
-    let gen_line = &raw_html[*k];
-    
-    if *k == 0 {
+fn gender(wikt_data: &WikiContent) -> WordGender {
+    if class(wikt_data) != Noun && class(wikt_data) != ProperNoun {
         return Ungendered;
     }
 
-    let l = &gen_line.find(HTML_GENDER).unwrap() + HTML_GENDER.len();
-    let k = &gen_line.find("</span>").unwrap();
-    
-    let ba = gen_line[l..*k].to_string();
+    let pairs = [(NVir, vec!("|nv", "g=nv")), (Feminine,  vec!("g=f", "|f", "noun-f")), 
+    (MasculineInam,  vec!("m-in")), (MasculineAnim,  vec!("m-an")), (MasculinePers,  vec!("m-pr"))];
 
-    return match &ba[(ba.len() - HTML_ID_LEN)..] {
-        HTML_GND_FEM => Feminine,
-        HTML_GND_NEU => Neuter,
-        HTML_GND_M_A => MasculineAnim,
-        HTML_GND_M_I => MasculineInam,
-        HTML_GND_M_P => MasculinePers,
-        &_ => Ungendered
-    };
-}
-
-fn class(raw_html: &Vec<String>) -> WordClass {
-    let class = &mut TypeError;
-
-    for i in 0..raw_html.len() {
-        let pairs = vec![(HTML_CLASS_N, Noun), (HTML_CLASS_A, Adjective), (HTML_CLASS_V, Verb)];
-
-        for (ind, wrd) in pairs {
-            if raw_html[i].contains(ind) {
-                *class = wrd;
-                return class.clone();
-            }            
+    for (key, vec) in pairs {
+        for v in vec {
+            if wikt_data.parse.wiki_text.contains(v) {
+                return key;
+            }
         }
     }
-    return class.clone();
+    return Ungendered;
 }
 
-fn _pronounciation(_raw_html: &Vec<String>) -> String {
-    
+fn class(wikt_data: &WikiContent) -> WordClass {
+    let wiki_text = &wikt_data.parse.wiki_text;
+
+    let pairs = vec![("===Noun===", Noun), ("===Adjective===", Adjective), ("===Verb===", Verb), ("===Proper noun===", ProperNoun)];
+
+    for (key, class) in pairs {
+        if wiki_text.contains(key) {
+            return class;
+        }
+    }  
+
+    return TypeError;
+}
+
+fn pronounciation(wikt_data: &WikiContent) -> String {
+    let wiki_text = &wikt_data.parse.wiki_text;
+
+    if wiki_text.contains("{{pl-p}}") {
+        println!("!!!");
+        return "".to_owned();
+    }
+    let pat_wrd = Regex::new(r"\{\{pl-p\|([^|]*)\|").unwrap();
+
+    if let Some(captures) = pat_wrd.captures(&wiki_text) {
+        println!("!-!");
+        if let Some(matched_text) = captures.get(1) {
+            return matched_text.as_str().to_string();
+        }
+    }
     return "".to_owned();
 }
 
-fn num_cat(raw_html: &Vec<String>) -> WordNumericalCategory {
-    let num_cat = &mut NumericalCategoryError;
-    
-    let v = table(raw_html);
+fn num_cat(wikt_data: &WikiContent) -> WordNumericalCategory {
+    let wiki_text = &wikt_data.parse.wiki_text;
 
-    //noun
-    if v[5].contains("plural") {
-        *num_cat = Plural;
+    if class(wikt_data) != Noun && class(wikt_data) != ProperNoun {
+        return NonNoun;
     }
-    if v[5].contains("singular") {
-        *num_cat = Singular;
+    if wiki_text.contains("tantum=p") {
+        return Plural;
     }
-    if v[7].contains("plural") ||  v[6].contains("plural") && v[4].contains("singular") { //plural nouns & adjs
-        *num_cat = Both;
+    if wiki_text.contains("tantum=s") {
+        return Singular;
     }
-
-    return num_cat.clone();
+    return Both;
 }
 
 fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
@@ -219,19 +214,22 @@ async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<In
 
 /// Takes in a word, returns a pair (word, Vec<(subword, subtype)>, Gender, Type)
 async fn prep_word(client: &reqwest::Client, word: &str) -> Word {
-    let raw_html: Vec<String> = entry(&raw_html(&client, word).await);
+    let wiki_data = wikt_text(client, word).await.expect("Wikt_data err!");
+
+    let raw_html: Vec<String> = entry(&wiki_data.parse.html_text);
 
     let word = word.replace("_", " ");
 
-    let gender = gender(&raw_html);
-    let class = class(&raw_html);
-    let num_cat = num_cat(&raw_html);
+    let gender = gender(&wiki_data);
+    let class = class(&wiki_data);
+    let pronounciation = pronounciation(&wiki_data);
+    let num_cat = num_cat(&wiki_data);
 
     let table = table(&raw_html);
 
     let inflected_words = no_dupes(client, wrd_dupe_filter(find_links(&table, &class))).await;
 
-    let lemma = Lemma {word : word.clone(), gender, class, num_cat};
+    let lemma = Lemma {word : word.clone(), pronounciation, gender, class, num_cat};
 
     let mut pgs = Vec::new();
 
@@ -239,7 +237,7 @@ async fn prep_word(client: &reqwest::Client, word: &str) -> Word {
         pgs.push(gen_pg(&lemma, &inflected_word));
     }
 
-    return Word {lemma: lemma.clone(), inflected_words, pages : pgs.clone()};
+    return Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone()};
 }
 
 //entry point
@@ -253,11 +251,10 @@ pub async fn process(client: &reqwest::Client, wrd: &str) -> Word {
     if (word_data.inflected_words).len() == 0 {
         println!("All forms of {} exist!", &wrd);
     } else {
-
         let num = &mut 0;
         match word_data.lemma.class {
             Adjective => *num = 18,
-            Noun => *num = 13,
+            Noun | ProperNoun => *num = 13,
             Verb => *num = 40,
             TypeError => *num = 0
         };

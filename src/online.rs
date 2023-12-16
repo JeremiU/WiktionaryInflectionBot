@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 
-use crate::manipulation;
+use crate::{manipulation, raw_html, WikiContent};
 
 #[derive(Debug, Deserialize)]
 struct WebData {
@@ -76,4 +76,17 @@ pub async fn upload_wrd(wrd: &str) -> Result<(), reqwest::Error> {
         println!("Page: {:?}", wrd_data.inflected_words[i]);
     }
     Ok(())
+}
+
+pub async fn wikt_text(client: &reqwest::Client, wrd: &str) -> Result<WikiContent, reqwest::Error> {
+    let web_data = data();
+    
+    let params = &[("action","parse"), ("page", &wrd), 
+    ("prop", "sections|links|wikitext|text"), ("disablelimitreport", "1"),
+    ("preview","1")];
+
+    let str = make_call(&client, params, &web_data).await.expect("Incorrect call!");
+
+    let res: Result<WikiContent, serde_json::Error> = serde_json::from_str(&str);
+    Ok(res.expect("msg"))
 }

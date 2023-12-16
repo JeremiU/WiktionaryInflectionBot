@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER};
+use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER, manipulation, InflectionData};
 
 //doesn't work with mult. etymology words
 pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
@@ -28,4 +28,19 @@ pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
     return counter;
 }
 
-pub fn check_wrd() {}
+async fn check_single_word(inf: &InflectionData) {
+    //check pronounciation
+    //check gender
+    //check lines
+}
+
+pub async fn check_wrd(wrd: &str) -> Result<(), reqwest::Error> {
+    let client = reqwest::Client::new();
+    let w = manipulation::process(&client, wrd).await;
+
+    for inf in w.inflected_words {
+        let _ = check_single_word(&inf);
+    }
+
+    Ok(())
+}

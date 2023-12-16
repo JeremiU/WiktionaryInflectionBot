@@ -14,16 +14,18 @@ pub use data_formats::*;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
+    let client = reqwest::Client::new();
+
     let c = vec!["zupka"];
 
     for i in c {
         // let _ = online::upload_wrd(i).await;
     }
-    let client = reqwest::Client::new();
 
-    let i = fixes::get_wrd_sect(&client, "psa").await;
+    let word = manipulation::process(&client, "weekend").await;
+    let parse = word.wiki_data.parse;    
 
-    println!("{}", i);
+    println!("lemma: {:?}", word.lemma);
     //proper noun support MISSING! 
     Ok(())
 }
