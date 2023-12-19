@@ -1,25 +1,18 @@
-﻿use std::convert::TryInto;
+﻿use core::panic;
+use std::convert::TryInto;
 
 use crate::InflectionData;
-use crate::util::raw_html;
-use crate::util::find_line;
-use crate::util::str_split;
-use crate::util::par_cont;
-use crate::constants::*;
-use crate::data_formats::*;
-use crate::data_formats::WordClass::*;
-use crate::data_formats::WordGender::*;
-use crate::data_formats::WordNumericalCategory::*;
-use crate::page_generation::*;
+use crate::util::{extract_txt, find_line, str_split, par_cont, raw_html};
+use crate::{constants::*, data_formats::*, data_formats::WordClass::*, page_generation::*};
 use crate::wikt_text;
+
+use strum::IntoEnumIterator;
 
 use regex::Regex;
 
 fn entry(input: &str) -> Vec<String> {
     let lines = str_split(&input.to_string(), "\n");
-    
     let start: usize = find_line(&lines, HTML_PL_HEADER).try_into().unwrap();
-
     //checks whether this wiktionary page has multiple languages, and if so, crops to only polish
     let tmp_cut = &lines[(start+1)..lines.len()];
     let mut next_lang_start = find_line(&tmp_cut.to_vec(), "<h2>") + 1;
@@ -27,7 +20,9 @@ fn entry(input: &str) -> Vec<String> {
     if next_lang_start == -1 {
         next_lang_start = (&lines).len() as i32;
     }    
-
+    if next_lang_start == 0 {
+        next_lang_start = ((&lines).len() - start) as i32;
+    } 
     let end = start+next_lang_start as usize;
 
     return (&lines[start..end]).to_vec();       
@@ -36,7 +31,6 @@ fn entry(input: &str) -> Vec<String> {
 /// Narrows down the input block into just the inflection table data. If you want to print to find new indices, do it here
 fn table(k: &Vec<String>) -> Vec<String> {
     //check if multiple tables
-
     let tbl_a_indx = find_line(&k, HTML_INF_TBL).try_into().unwrap();
 
     let g = k[tbl_a_indx..].to_vec();
@@ -45,72 +39,26 @@ fn table(k: &Vec<String>) -> Vec<String> {
     return g[0..tbl_b_indx].to_vec();
 }
 
-fn gender(wikt_data: &WikiContent) -> WordGender {
-    if class(wikt_data) != Noun && class(wikt_data) != ProperNoun {
-        return Ungendered;
-    }
-
-    let pairs = [(NVir, vec!("|nv", "g=nv")), (Feminine,  vec!("g=f", "|f", "noun-f")), 
-    (MasculineInam,  vec!("m-in")), (MasculineAnim,  vec!("m-an")), (MasculinePers,  vec!("m-pr"))];
-
-    for (key, vec) in pairs {
-        for v in vec {
-            if wikt_data.parse.wiki_text.contains(v) {
-                return key;
-            }
-        }
-    }
-    return Ungendered;
+fn gender(wiki_data: &WikiContent) -> WordGender {
+    return WordGender::match_txt(&wiki_data.parse.wiki_text);
 }
 
-fn class(wikt_data: &WikiContent) -> WordClass {
-    let wiki_text = &wikt_data.parse.wiki_text;
-
-    let pairs = vec![("===Noun===", Noun), ("===Adjective===", Adjective), ("===Verb===", Verb), ("===Proper noun===", ProperNoun)];
-
-    for (key, class) in pairs {
-        if wiki_text.contains(key) {
-            return class;
-        }
-    }  
-
-    return TypeError;
+fn class(wiki_data: &WikiContent) -> WordClass {
+    return WordClass::match_txt(&wiki_data.parse.wiki_text);
 }
 
-fn pronounciation(wikt_data: &WikiContent) -> String {
-    let wiki_text = &wikt_data.parse.wiki_text;
-
-    if wiki_text.contains("{{pl-p}}") {
-        println!("!!!");
-        return "".to_owned();
-    }
-    let pat_wrd = Regex::new(r"\{\{pl-p\|([^|]*)\|").unwrap();
-
-    if let Some(captures) = pat_wrd.captures(&wiki_text) {
-        println!("!-!");
-        if let Some(matched_text) = captures.get(1) {
-            return matched_text.as_str().to_string();
-        }
-    }
-    return "".to_owned();
+fn pronounciation(wiki_data: &WikiContent) -> String {
+    let pro = extract_txt(&wiki_data.parse.wiki_text, r"\{\{pl-p\|([^|]*)\}\}"); 
+    return if pro.starts_with("a=") {"".to_owned()} else {pro};
 }
 
-fn num_cat(wikt_data: &WikiContent) -> WordNumericalCategory {
-    let wiki_text = &wikt_data.parse.wiki_text;
-
-    if class(wikt_data) != Noun && class(wikt_data) != ProperNoun {
-        return NonNoun;
-    }
-    if wiki_text.contains("tantum=p") {
-        return Plural;
-    }
-    if wiki_text.contains("tantum=s") {
-        return Singular;
-    }
-    return Both;
+fn num_cat(wiki_data: &WikiContent) -> NounNumericalCategory {
+    let wiki_text = &wiki_data.parse.wiki_text;
+    return NounNumericalCategory::match_txt(&wiki_text);
 }
 
-fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
+fn find_links(wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionData> {
+    let bit = table(&entry(&wiki_data.parse.html_text));
     let to_check: &mut Vec<InflectionData> = &mut Vec::new();
     let p: &mut Vec<(&str, i32)> = &mut Vec::new();
    
@@ -139,47 +87,22 @@ fn find_links(bit: &Vec<String>, wrd_type: &WordClass) -> Vec<InflectionData> {
     for (key, ind) in p {
         let str_p = &bit[(*ind) as usize];
         
-        let st = &str_p[(str_p.find("<a ").unwrap())..];
+        let st = &str_p[(str_p.find("<a").unwrap())..];
         let k = str_split(st, "href=");
 
         for i in 1..k.len() {
-            let mut inflected_word = String::new();
+            let inflected_word = extract_txt(&k[i], r">([^<]*)</a>");
+            let dep = &extract_txt(&k[i], r"(deprecative)");
+            let arc = &extract_txt(&k[i], r"(archaic)");
             let mut notes = String::new();
-
-            let pat_wrd = Regex::new(r">([^<]*)</a>").unwrap();
-            let pat_dep = Regex::new(r"(deprecative)").unwrap();
-            let pat_arc = Regex::new(r"(archaic)").unwrap();
-
-            if let Some(captures) = pat_wrd.captures(&k[i]) {
-                if let Some(matched_text) = captures.get(1) {
-                    let extracted_text = matched_text.as_str();
-                    inflected_word = extracted_text.to_string();
-                }
-            } else {
-                panic!("ERR extr wrd: {}", k[i]);
+            
+            if !dep.is_empty() {
+                notes = format!("deprecative-{}", dep);
             }
-
-            if let Some(_) = pat_dep.captures(&k[i]) { //deprecative
-                if let Some(captures) = pat_wrd.captures(&k[i-1]) {
-                    if let Some(matched_text) = captures.get(1) {
-                        let extracted_text = matched_text.as_str();
-                        println!("ALT: {}", extracted_text);
-                        notes = format!("deprecative-{}", &extracted_text);
-                    }
-                }
+            if !arc.is_empty() {
+                notes = format!("archaic-{}", dep);
             }
-
-            if let Some(_) = pat_arc.captures(&k[i]) { //archaic
-                if let Some(captures) = pat_wrd.captures(&k[i-1]) {
-                    if let Some(matched_text) = captures.get(1) {
-                        let extracted_text = matched_text.as_str();
-                        println!("ALT: {}", extracted_text);
-                        notes = format!("archaic-{}", &extracted_text);
-                    }    
-                }
-            }
-
-            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes});
+            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes, pronounciation_base: pronounciation(wiki_data)});
         }
     }
     return to_check.to_vec();
@@ -200,6 +123,28 @@ fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
     return filtered.to_vec();
 }
 
+async fn get_infl_words(client: &reqwest::Client, wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionData> {
+    return no_dupes(client, wrd_dupe_filter(find_links(&wiki_data, &wrd_type))).await;
+}
+
+fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
+    let mut infl_forms = Vec::new();
+    let txt = &wiki_data.parse.wiki_text;
+    let class = class(wiki_data);
+    let num_cat = num_cat(wiki_data);
+
+    for noun_dec in NounDeclension::iter() {    
+
+    }
+
+    let pat_wrd = Regex::new(r"|gens=([^<]*)").unwrap();
+
+    if infl_forms.len() != num_cat.size() {
+        panic!("Incorrect arr size!");
+    } 
+    return infl_forms;
+}
+
 async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<InflectionData>  {
     let mut no_dupes: Vec<InflectionData> = Vec::new();
 
@@ -213,53 +158,22 @@ async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<In
 }
 
 /// Takes in a word, returns a pair (word, Vec<(subword, subtype)>, Gender, Type)
-async fn prep_word(client: &reqwest::Client, word: &str) -> Word {
-    let wiki_data = wikt_text(client, word).await.expect("Wikt_data err!");
-
-    let raw_html: Vec<String> = entry(&wiki_data.parse.html_text);
-
+pub async fn process(client: &reqwest::Client, word: &str) -> Word {
+    let wiki_data = wikt_text(client, word).await.expect("wiki_data err!");
     let word = word.replace("_", " ");
 
     let gender = gender(&wiki_data);
     let class = class(&wiki_data);
-    let pronounciation = pronounciation(&wiki_data);
     let num_cat = num_cat(&wiki_data);
 
-    let table = table(&raw_html);
+    let inflected_words = get_infl_words(client, &wiki_data, &class).await;
 
-    let inflected_words = no_dupes(client, wrd_dupe_filter(find_links(&table, &class))).await;
-
-    let lemma = Lemma {word : word.clone(), pronounciation, gender, class, num_cat};
+    let lemma = Lemma {word : word.clone(), gender, class, num_cat};
 
     let mut pgs = Vec::new();
 
     for inflected_word in &inflected_words {
         pgs.push(gen_pg(&lemma, &inflected_word));
     }
-
     return Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone()};
-}
-
-//entry point
-pub async fn process(client: &reqwest::Client, wrd: &str) -> Word {
-    let word_data = prep_word(&client, wrd).await;
-
-    println!("word: {}", word_data.lemma.word);
-    println!("\tgender: {:?}", word_data.lemma.gender);
-    println!("\tclass: {:?}", word_data.lemma.class);    
-
-    if (word_data.inflected_words).len() == 0 {
-        println!("All forms of {} exist!", &wrd);
-    } else {
-        let num = &mut 0;
-        match word_data.lemma.class {
-            Adjective => *num = 18,
-            Noun | ProperNoun => *num = 13,
-            Verb => *num = 40,
-            TypeError => *num = 0
-        };
-        println!("\tTotal pages: {}", *num);
-        println!("\t{} page(s) to create: {:?}", (&word_data.inflected_words).len(), &word_data.inflected_words);
-    }
-    return word_data;
 }

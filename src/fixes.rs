@@ -28,7 +28,7 @@ pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
     return counter;
 }
 
-async fn check_single_word(inf: &InflectionData) {
+async fn check_single_noun(inf: &InflectionData, base_word: &str) {
     //check pronounciation
     //check gender
     //check lines
@@ -39,7 +39,7 @@ pub async fn check_wrd(wrd: &str) -> Result<(), reqwest::Error> {
     let w = manipulation::process(&client, wrd).await;
 
     for inf in w.inflected_words {
-        let _ = check_single_word(&inf);
+        let _ = check_single_noun(&inf, wrd);
     }
 
     Ok(())

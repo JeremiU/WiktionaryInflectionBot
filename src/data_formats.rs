@@ -1,5 +1,19 @@
 use serde::{Serialize, Deserialize};
 use strum::{EnumString, Display};
+use strum_macros::EnumIter;
+
+use crate::{NounNumericalCategory::*, WordGender::*, WordClass::*, match_txt};
+
+#[derive(Debug, Clone, EnumIter, EnumString, Display, Copy)]
+pub enum NounDeclension {
+    NominativeSg, NominatePl, 
+    GenitiveSg, GenitivePl,
+    DativeSg, DativePl,
+    AccusativeSg, AccusativePl,
+    InstrumentalSg, InstrumentalPl,
+    LocativeSg, LocativePl,
+    VocativeSg, VocativePl,   
+}
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordClass {
@@ -7,7 +21,13 @@ pub enum WordClass {
     ProperNoun,
     Verb,
     Adjective,
-    TypeError
+    WordClassError
+}
+
+impl WordClass {
+    pub fn match_txt(str: &str) -> WordClass {
+        return match_txt(&[(vec!("===Noun==="), Noun), (vec!("===Adjective==="), Adjective), (vec!("===Verb==="), Verb), (vec!("===Proper noun==="), ProperNoun)], WordClassError, false, str);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
@@ -18,28 +38,48 @@ pub enum WordGender {
     MasculineInam,
     MasculinePers,
     NVir,
-    Ungendered
+    WordGenderError
 }
 
 impl WordGender {
     pub fn value(&self) -> &str {
         return match *self {
-            WordGender::Feminine => "f",
-            WordGender::Neuter => "n",
-            WordGender::MasculinePers => "m-pr",
-            WordGender::MasculineAnim => "m-an",
-            WordGender::MasculineInam => "m-in",
+            Feminine => "f",
+            Neuter => "n",
+            MasculinePers => "m-pr",
+            MasculineAnim => "m-an",
+            MasculineInam => "m-in",
+            NVir => "nv",
             _ => "",
         };
+    }
+    pub fn match_txt(str: &str) -> WordGender {
+        return match_txt(&[(vec!("noun|nv", "g=nv"), NVir), (vec!("g=f", "noun|f", "noun-f"), Feminine),
+        (vec!("m-in"), MasculineInam), (vec!("m-an"), MasculineAnim), (vec!("m-pr"), MasculinePers), 
+        (vec!("noun|n", "g=n"), Neuter)], WordGenderError, false, str);
     }
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
-pub enum WordNumericalCategory {
+pub enum NounNumericalCategory {
     Singular,
     Plural,
     Both,
     NonNoun
+}
+
+impl NounNumericalCategory {
+    pub fn size(&self) -> usize {
+        return match *self {
+            Singular | Plural => 7,
+            Both => 14,
+            NonNoun => 0
+        }
+    }
+    pub fn match_txt(str: &str) -> NounNumericalCategory {
+        return if str.contains("tatum=p") || str.contains("num=p") {Plural}
+        else if str.contains("tatum=s") || str.contains("num=s") {Singular} else {Both};    
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -53,17 +93,22 @@ pub struct Word {
 #[derive(Clone, Debug)]
 pub struct Lemma {
     pub word: String,
-    pub pronounciation: String,
     pub gender: WordGender,
     pub class: WordClass,
-    pub num_cat: WordNumericalCategory,    
+    pub num_cat: NounNumericalCategory,    
 }
 
 #[derive(Clone, Debug)]
 pub struct InflectionData {
     pub inflected_word: String,
     pub keys: String,
-    pub notes: String
+    pub notes: String,
+    pub pronounciation_base: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct Key {
+
 }
 
 #[derive(Clone, Debug)]

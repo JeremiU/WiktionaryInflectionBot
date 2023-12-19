@@ -1,7 +1,9 @@
-use crate::{str_split, Lemma, InflectionData, Page, WordClass, WordClass::*, WordNumericalCategory::*};
+use crate::{str_split, Lemma, InflectionData, Page, WordClass, WordClass::*, NounNumericalCategory::*};
 
+//NEEDS PRONOUNCIATION WORK
 fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     let mut page_markup: String = String::new();
+    let pronounciation = ""; //will not work
 
     //if exists, \n
     page_markup.push_str("==Polish==\n");
@@ -14,7 +16,9 @@ fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     }
 
     page_markup.push_str("===Pronunciation===\n");
-    page_markup.push_str("{{pl-p}}\n");
+    let pronounciation = if !pronounciation.is_empty() {"|".to_owned() + pronounciation} else {"".to_owned()};
+
+    page_markup.push_str(format!("{{{{pl-p{}}}}}\n", pronounciation).as_str());
     page_markup.push_str("\n");
     page_markup.push_str(format!("==={}===\n", class.to_string().replace("_", " ")).as_str());
 

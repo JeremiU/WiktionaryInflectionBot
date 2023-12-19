@@ -1,17 +1,5 @@
-pub const HTML_PL_HEADER: &str = ">Polish</span><span class=\"mw-editsection\">";
+pub const HTML_PL_HEADER: &str = ">Polish</span><span class=\"mw-editsection";
 pub const HTML_INF_TBL: &str = "class=\"inflection-table";
-pub const HTML_GENDER: &str = "<span class=\"gender\">";
-
-pub const HTML_ID_LEN: usize = 9;
-pub const HTML_GND_FEM: &str = ">f</abbr>";
-pub const HTML_GND_NEU: &str = ">n</abbr>";
-pub const HTML_GND_M_A: &str = "im</abbr>";
-pub const HTML_GND_M_I: &str = "an</abbr>";
-pub const HTML_GND_M_P: &str = "rs</abbr>";
-
-pub const HTML_CLASS_N: &str = "Noun</span>";
-pub const HTML_CLASS_A: &str = "Adjective</span>";
-pub const HTML_CLASS_V: &str = "Verb</span>";
 
 pub const ID_PAIRS_NOUN: [(&str, i32); 13] = [("nom_pl", 14), ("gen_sg", 19), ("gen_pl", 21), ("dat_sg", 26), ("dat_pl", 28), ("acc_sg", 33), ("acc_pl", 35),  ("ins_sg", 40), ("ins_pl", 42), ("loc_sg", 47), ("loc_pl", 49), ("voc_sg", 54), ("voc_pl", 56)]; 
 pub const ID_PAIRS_NOUN_SG: [(&str, i32); 6] = [("gen", 15), ("dat", 20), ("acc", 25), ("ins", 30), ("loc", 35), ("voc", 40)]; 

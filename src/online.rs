@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::fs::File;
 use std::io::Read;
 
-use crate::{manipulation, raw_html, WikiContent};
+use crate::{manipulation, WikiContent};
 
 #[derive(Debug, Deserialize)]
 struct WebData {
@@ -46,8 +46,7 @@ async fn edit_wiki_page(client: &reqwest::Client, infl_wrd: &str, txt: &str, web
     let params = &[("action", "edit"), ("title", &infl_wrd), 
     ("appendtext", &txt), ("summary", "Added inflection page"), ("tags", ""), ("bot", "1"), 
     ("contentmodel","wikitext"), ("token", &csrf_token)];
-    let _ = make_call(client, params, web_data);
-    
+    let _ = make_call(client, params, web_data).await;
     Ok(())
 }
 
@@ -62,15 +61,19 @@ async fn make_call(client: &reqwest::Client, params: &[(&str, &str)], web_data: 
     .await?;
 
     let body = response.text().await?;
+
+    println!("call made {:?}", params);
     return Ok(body);
 }
 
-pub async fn upload_wrd(wrd: &str) -> Result<(), reqwest::Error> {
-    let client = reqwest::Client::new();
+pub async fn upload_wrd(client: &reqwest::Client, wrd: &str) -> Result<(), reqwest::Error> {
     let web_data = data();
     let csrf_token = csrf_token(&client, &web_data).await.expect("NO CSRF");
 
     let wrd_data = manipulation::process(&client, &wrd).await;
+    println!("word: {}", wrd_data.lemma.word);
+    println!("\tgender: {:?}", wrd_data.lemma.gender);
+    println!("\tclass: {:?}", wrd_data.lemma.class);
     for i in 0..wrd_data.pages.len() {
         let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
         println!("Page: {:?}", wrd_data.inflected_words[i]);

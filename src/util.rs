@@ -1,4 +1,5 @@
 use std::convert::TryInto;
+use regex::Regex;
 
 use crate::InflectionData;
 
@@ -37,4 +38,35 @@ pub fn par_cont(pair: &Vec<InflectionData>, val: &str) -> bool {
         }
     }
     return cont;
+}
+
+pub fn match_txt<T: Copy>(pairs: &[(Vec<&str>, T)], unresolved: T, full_match: bool, str: &str) -> T {
+    for (keys, val) in pairs {
+        for key in keys {
+            if !full_match {
+                if str.contains(*key) {
+                    return *val;
+                }
+            } else {
+                if str.eq(*key) {
+                    return *val;
+                }
+            }    
+        }
+    }
+    return unresolved;
+}
+
+//Returns the val in key if found, otherwise, empty string
+pub fn extract_txt(key: &str, val: &str) -> String {
+    let pat = Regex::new(val).unwrap();
+
+    if let Some(_) = pat.captures(&key) { //deprecative
+        if let Some(captures) = pat.captures(&key) {
+            if let Some(matched_text) = captures.get(1) {
+                return matched_text.as_str().to_owned();
+            }
+        }
+    }
+    return "".to_owned();
 }

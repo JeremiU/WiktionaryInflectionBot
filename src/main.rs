@@ -11,21 +11,17 @@ pub use util::*;
 pub use constants::*;
 pub use online::*;
 pub use data_formats::*;
+pub use data_formats::WordGender::*;
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
     let client = reqwest::Client::new();
 
-    let c = vec!["zupka"];
+    //fix if page exists in different language
+    let c = vec!["szmateks"];
 
     for i in c {
-        // let _ = online::upload_wrd(i).await;
+        let _ = online::upload_wrd(&client, i).await;
     }
-
-    let word = manipulation::process(&client, "weekend").await;
-    let parse = word.wiki_data.parse;    
-
-    println!("lemma: {:?}", word.lemma);
-    //proper noun support MISSING! 
     Ok(())
 }
