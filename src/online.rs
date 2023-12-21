@@ -1,24 +1,8 @@
 use reqwest;
-use serde::Deserialize;
 use serde_json::Value;
-use std::fs::File;
-use std::io::Read;
+use reqwest::{Error, Client};
 
-use crate::{manipulation, WikiContent};
-
-#[derive(Debug, Deserialize)]
-struct WebData {
-    api_url: String,
-    acc_tok: String
-}
-
-fn data() -> WebData {
-    let file_path = "WebData.json";
-    let mut file = File::open(file_path).expect("Unable to open file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).expect("Unable to read file");
-    return serde_json::from_value(serde_json::from_str(&contents).expect("Err 1")).expect("Err 2");
-}
+use crate::{manipulation, WikiContent, WebData, util::client_data};
 
 fn extract_csrf(json_str: &str) -> Option<String> {
     let parsed: Result<Value, _> = serde_json::from_str(json_str);
@@ -37,12 +21,12 @@ fn extract_csrf(json_str: &str) -> Option<String> {
     None
 }
 
-async fn csrf_token(client: &reqwest::Client, web_data: &WebData) -> Result<String, reqwest::Error> {
+async fn csrf_token(client: &Client, web_data: &WebData) -> Result<String, Error> {
     let body = make_call(client, &[("action", "query"), ("meta", "tokens")], web_data).await.unwrap();
     Ok(extract_csrf(&body).unwrap())
 }
 
-async fn edit_wiki_page(client: &reqwest::Client, infl_wrd: &str, txt: &str, web_data: &WebData, csrf_token: &str) -> Result<(), reqwest::Error> {
+async fn edit_wiki_page(client: &Client, infl_wrd: &str, txt: &str, web_data: &WebData, csrf_token: &str) -> Result<(), Error> {
     let params = &[("action", "edit"), ("title", &infl_wrd), 
     ("appendtext", &txt), ("summary", "Added inflection page"), ("tags", ""), ("bot", "1"), 
     ("contentmodel","wikitext"), ("token", &csrf_token)];
@@ -50,7 +34,7 @@ async fn edit_wiki_page(client: &reqwest::Client, infl_wrd: &str, txt: &str, web
     Ok(())
 }
 
-async fn make_call(client: &reqwest::Client, params: &[(&str, &str)], web_data: &WebData) -> Result<String, reqwest::Error> {
+async fn make_call(client: &Client, params: &[(&str, &str)], web_data: &WebData) -> Result<String, Error> {
     let mut params = params.to_vec();
     params.extend_from_slice(&[("format", "json"), ("formatversion", "2")]);
 
@@ -66,8 +50,8 @@ async fn make_call(client: &reqwest::Client, params: &[(&str, &str)], web_data: 
     return Ok(body);
 }
 
-pub async fn upload_wrd(client: &reqwest::Client, wrd: &str) -> Result<(), reqwest::Error> {
-    let web_data = data();
+pub async fn upload_wrd(client: &Client, wrd: &str) -> Result<(), Error> {
+    let web_data = client_data();
     let csrf_token = csrf_token(&client, &web_data).await.expect("NO CSRF");
 
     let wrd_data = manipulation::process(&client, &wrd).await;
@@ -81,7 +65,7 @@ pub async fn upload_wrd(client: &reqwest::Client, wrd: &str) -> Result<(), reqwe
     Ok(())
 }
 
-pub async fn wikt_text(client: &reqwest::Client, wrd: &str) -> Result<WikiContent, reqwest::Error> {
+pub async fn wikt_text(client: &Client, wrd: &str) -> Result<WikiContent, Error> {
     let web_data = data();
     
     let params = &[("action","parse"), ("page", &wrd), 

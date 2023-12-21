@@ -1,7 +1,10 @@
 use std::convert::TryInto;
+use std::time::{SystemTime, UNIX_EPOCH};
 use regex::Regex;
+use std::fs::File;
+use std::io::Read;
 
-use crate::InflectionData;
+use crate::{InflectionData, WebData};
 
 pub async fn raw_html(client: &reqwest::Client, word: &str) -> String {
     let response = client.get(format!("https://en.wiktionary.org/wiki/{word}#Polish"))
@@ -69,4 +72,27 @@ pub fn extract_txt(key: &str, val: &str) -> String {
         }
     }
     return "".to_owned();
+}
+
+pub fn sys_time() -> u128 {
+    return match SystemTime::now().duration_since(UNIX_EPOCH) {
+        Ok(duration) => {
+            duration.as_nanos()
+        },
+        Err(_) => {
+            0
+        }
+    };
+}
+
+pub fn ns_to_s(s: u128) -> f64 {
+    return (((s as f64) / 1_000_000_000.0) * 1000.0).round() / 1000.0;
+}
+
+pub fn client_data() -> WebData {
+    let file_path = "WebData.json";
+    let mut file = File::open(file_path).expect("Unable to open file");
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).expect("Unable to read file");
+    return serde_json::from_value(serde_json::from_str(&contents).expect("Err 1")).expect("Err 2");
 }

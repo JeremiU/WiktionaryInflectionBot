@@ -142,3 +142,9 @@ pub struct Parse {
 pub struct WikiContent {
     pub parse: Parse
 }
+
+#[derive(Debug, Deserialize)]
+pub struct WebData {
+    pub api_url: String,
+    pub acc_tok: String
+}
