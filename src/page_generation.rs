@@ -45,6 +45,7 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
     let mut note_prefix = String::new();
 
     if inflected_data.notes.len() > 0 {
+        println!("{}", inflected_data.notes);
         note_prefix = format!("{{{{lb|pl|{}}}}}", str_split(&inflected_data.notes, "-")[0]);
     }
     

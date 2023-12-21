@@ -1,10 +1,8 @@
 ﻿use core::panic;
 use std::convert::TryInto;
 
-use crate::InflectionData;
+use crate::{InflectionData, wikt_text, constants::*, data_formats::*, data_formats::WordClass::*, page_generation::*};
 use crate::util::{extract_txt, find_line, str_split, par_cont, raw_html};
-use crate::{constants::*, data_formats::*, data_formats::WordClass::*, page_generation::*};
-use crate::wikt_text;
 
 use strum::IntoEnumIterator;
 
@@ -96,11 +94,11 @@ fn find_links(wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionDa
             let arc = &extract_txt(&k[i], r"(archaic)");
             let mut notes = String::new();
             
-            if !dep.is_empty() {
-                notes = format!("deprecative-{}", dep);
+            if !(*dep).is_empty() {
+                notes = format!("deprecative-{}", extract_txt(&k[i-1], r">([^<]*)</a>"));
             }
-            if !arc.is_empty() {
-                notes = format!("archaic-{}", dep);
+            if !(*arc).is_empty() {
+                notes = format!("archaic-{}", extract_txt(&k[i-1], r">([^<]*)</a>"));
             }
             to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes, pronounciation_base: pronounciation(wiki_data)});
         }

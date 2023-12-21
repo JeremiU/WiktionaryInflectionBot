@@ -6,12 +6,7 @@ mod data_formats;
 mod page_generation;
 mod fixes;
 
-pub use manipulation::*;
-pub use util::*;
-pub use constants::*;
-pub use online::*;
-pub use data_formats::*;
-pub use data_formats::WordGender::*;
+pub use {constants::*, manipulation::*, online::*, util::*, data_formats::{WordGender::*, *}};
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -20,7 +15,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
     //fix if page exists in different language
     //fix em
-    let c = vec!["przeszłość","teraźniejszość","przeszłość"];
+    let c = vec!["przeszłość","teraźniejszość","przeszłość", "prymicja"];
 
     for i in &c {
         let _ = online::upload_wrd(&client, *i).await;

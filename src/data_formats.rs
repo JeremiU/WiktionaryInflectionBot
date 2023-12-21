@@ -144,7 +144,7 @@ pub struct WikiContent {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct WebData {
+pub struct ClientData {
     pub api_url: String,
     pub acc_tok: String
 }
