@@ -1,7 +1,7 @@
 use std::{time::{SystemTime, UNIX_EPOCH}, convert::TryInto, fs::File, io::Read};
 use regex::Regex;
 
-use crate::{InflectionData, ClientData};
+use crate::{InflectionData, WebData};
 
 pub async fn raw_html(client: &reqwest::Client, word: &str) -> String {
     let response = client.get(format!("https://en.wiktionary.org/wiki/{word}#Polish"))
@@ -60,7 +60,7 @@ pub fn match_txt<T: Copy>(pairs: &[(Vec<&str>, T)], unresolved: T, full_match: b
 //Returns the val in key if found, otherwise, empty string
 pub fn extract_txt(key: &str, val: &str) -> String {
     let pat = Regex::new(val).unwrap();
-        
+
     if let Some(_) = pat.captures(&key) { //deprecative
         if let Some(captures) = pat.captures(&key) {
             if let Some(matched_text) = captures.get(1) {
@@ -86,7 +86,7 @@ pub fn ns_to_s(s: u128) -> f64 {
     return (((s as f64) / 1_000_000_000.0) * 1000.0).round() / 1000.0;
 }
 
-pub fn client_data() -> ClientData {
+pub fn client_data() -> WebData {
     let file_path = "WebData.json";
     let mut file = File::open(file_path).expect("Unable to open file");
     let mut contents = String::new();

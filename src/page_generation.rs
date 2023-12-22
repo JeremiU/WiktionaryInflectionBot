@@ -45,7 +45,6 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
     let mut note_prefix = String::new();
 
     if inflected_data.notes.len() > 0 {
-        println!("{}", inflected_data.notes);
         note_prefix = format!("{{{{lb|pl|{}}}}}", str_split(&inflected_data.notes, "-")[0]);
     }
     
@@ -74,15 +73,25 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
 
 fn gen_adj(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
     let mut page_markup: String = gen_pg_hd(&Adjective, &inflected_data.notes);
+    page_markup.push_str(r"{{head|pl|adjective form}}");
+    page_markup.push_str("\n");
 
+    for key in str_split(&inflected_data.keys, "/") {
+        match key.as_str() {
+            "nom|voc|v_pl" => {},
+            _ => {}
+        }
+
+        println!("{}: {}", inflected_data.inflected_word, key);
+    }
     return Page {title: inflected_data.inflected_word.clone(), body: page_markup};
 }
 
 pub fn gen_pg(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
     match &lemma.class {
-       Noun => gen_noun(lemma, inflected_data),
-       Verb => Page { title: "".to_string(), body: "".to_string()},
-       Adjective => Page { title: "".to_string(), body: "".to_string()},
-       _ => Page { title: "".to_string(), body: "".to_string()}, 
+        Adjective => gen_adj(lemma, inflected_data),
+        Noun => gen_noun(lemma, inflected_data),
+        Verb => Page { title: "".to_string(), body: "".to_string()},
+        _ => Page { title: "".to_string(), body: "".to_string()}, 
     }
 }

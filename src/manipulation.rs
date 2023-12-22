@@ -1,12 +1,10 @@
 ﻿use core::panic;
 use std::convert::TryInto;
-
-use crate::{InflectionData, wikt_text, constants::*, data_formats::*, data_formats::WordClass::*, page_generation::*};
-use crate::util::{extract_txt, find_line, str_split, par_cont, raw_html};
-
-use strum::IntoEnumIterator;
-
 use regex::Regex;
+
+use crate::{InflectionData, constants::*, data_formats::*, data_formats::WordClass::*, page_generation::*};
+use crate::util::{extract_txt, find_line, str_split, par_cont, raw_html};
+use crate::wikt_text;
 
 fn entry(input: &str) -> Vec<String> {
     let lines = str_split(&input.to_string(), "\n");
@@ -55,12 +53,12 @@ fn num_cat(wiki_data: &WikiContent) -> NounNumericalCategory {
     return NounNumericalCategory::match_txt(&wiki_text);
 }
 
-fn find_links(wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionData> {
+fn find_links(wiki_data: &WikiContent, class: &WordClass) -> Vec<InflectionData> {
     let bit = table(&entry(&wiki_data.parse.html_text));
     let to_check: &mut Vec<InflectionData> = &mut Vec::new();
     let p: &mut Vec<(&str, i32)> = &mut Vec::new();
    
-    match wrd_type {
+    match class {
         &Noun => {
             if bit.len() >= 57 {
                 *p = ID_PAIRS_NOUN.to_vec()
@@ -100,7 +98,7 @@ fn find_links(wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionDa
             if !(*arc).is_empty() {
                 notes = format!("archaic-{}", extract_txt(&k[i-1], r">([^<]*)</a>"));
             }
-            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes, pronounciation_base: pronounciation(wiki_data)});
+            to_check.push(InflectionData {inflected_word: inflected_word.to_owned(), keys : key.to_owned(), notes});
         }
     }
     return to_check.to_vec();
@@ -121,19 +119,11 @@ fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
     return filtered.to_vec();
 }
 
-async fn get_infl_words(client: &reqwest::Client, wiki_data: &WikiContent, wrd_type: &WordClass) -> Vec<InflectionData> {
-    return no_dupes(client, wrd_dupe_filter(find_links(&wiki_data, &wrd_type))).await;
-}
-
 fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
     let mut infl_forms = Vec::new();
     let txt = &wiki_data.parse.wiki_text;
     let class = class(wiki_data);
     let num_cat = num_cat(wiki_data);
-
-    for noun_dec in NounDeclension::iter() {    
-
-    }
 
     let pat_wrd = Regex::new(r"|gens=([^<]*)").unwrap();
 
@@ -143,28 +133,22 @@ fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
     return infl_forms;
 }
 
-async fn no_dupes(client: &reqwest::Client, list: Vec<InflectionData>) -> Vec<InflectionData>  {
-    let mut no_dupes: Vec<InflectionData> = Vec::new();
-
-    for id in list {
-        let lines = str_split(raw_html(client, &id.inflected_word).await.as_str(), "\n");
-        if find_line(&lines, HTML_PL_HEADER) == -1 {
-            no_dupes.push(id);
-        }
-    }
-    return no_dupes.clone();
-}
-
 /// Takes in a word, returns a pair (word, Vec<(subword, subtype)>, Gender, Type)
-pub async fn process(client: &reqwest::Client, word: &str) -> Word {
-    let wiki_data = wikt_text(client, word).await.expect("wiki_data err!");
+pub async fn process(client: &reqwest::Client, word: &str) -> Option<Word> {
+    let wiki_data = wikt_text(client, word).await;
+    if wiki_data.is_none() {
+        return None;
+    }
+    let wiki_data = wiki_data?; 
+
     let word = word.replace("_", " ");
 
+    let pronounciation_base = pronounciation(&wiki_data);
     let gender = gender(&wiki_data);
     let class = class(&wiki_data);
     let num_cat = num_cat(&wiki_data);
-
-    let inflected_words = get_infl_words(client, &wiki_data, &class).await;
+    println!("{}", wiki_data.parse.word);
+    let inflected_words = wrd_dupe_filter(find_links(&wiki_data, &class));
 
     let lemma = Lemma {word : word.clone(), gender, class, num_cat};
 
@@ -173,5 +157,5 @@ pub async fn process(client: &reqwest::Client, word: &str) -> Word {
     for inflected_word in &inflected_words {
         pgs.push(gen_pg(&lemma, &inflected_word));
     }
-    return Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone()};
+    return Some(Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone(), pronounciation_base});
 }

@@ -1,6 +1,7 @@
 use regex::Regex;
+use reqwest::Client;
 
-use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER, manipulation, InflectionData};
+use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER, manipulation::process, InflectionData, Word};
 
 //doesn't work with mult. etymology words
 pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
@@ -28,19 +29,28 @@ pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
     return counter;
 }
 
-async fn check_single_noun(inf: &InflectionData, base_word: &str) {
+fn check_single_noun(word: &Word) {
+    println!("    Checking: {}", word.lemma.word);
     //check pronounciation
     //check gender
-    //check lines
+    let _ = check_lines(word);
 }
 
-pub async fn check_wrd(wrd: &str) -> Result<(), reqwest::Error> {
-    let client = reqwest::Client::new();
-    let w = manipulation::process(&client, wrd).await;
+fn check_lines(word: &Word) {
+    println!("{:?}", word.wiki_data.parse.html_text);
+}
 
-    for inf in w.inflected_words {
-        let _ = check_single_noun(&inf, wrd);
+pub async fn check_wrd(client: &Client, wrd: &str) {
+    let wrd_data = process(&client, &wrd).await.expect("ha");
+    for inf in wrd_data.inflected_words {
+        let wrd = process(&client, &inf.inflected_word).await;
+        println!("    {}", inf.inflected_word);
+        if wrd.is_none() {
+            println!("    NEED TO CREATE: {}", &inf.inflected_word);
+            continue;
+        } else  {
+            println!("hallo");
+            let _ = check_single_noun(&wrd.expect("No-Err"));                
+        }
     }
-
-    Ok(())
 }

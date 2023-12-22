@@ -5,14 +5,31 @@ use strum_macros::EnumIter;
 use crate::{NounNumericalCategory::*, WordGender::*, WordClass::*, match_txt};
 
 #[derive(Debug, Clone, EnumIter, EnumString, Display, Copy)]
-pub enum NounDeclension {
-    NominativeSg, NominatePl, 
-    GenitiveSg, GenitivePl,
-    DativeSg, DativePl,
-    AccusativeSg, AccusativePl,
-    InstrumentalSg, InstrumentalPl,
-    LocativeSg, LocativePl,
-    VocativeSg, VocativePl,   
+pub enum Inflection {
+    //nouns
+    NounNominativeSg, NounNominatePl, 
+    NounGenitiveSg, NounGenitivePl,
+    NounDativeSg, NounDativePl,
+    NounAccusativeSg, NounAccusativePl,
+    NounInstrumentalSg, NounInstrumentalPl,
+    NounLocativeSg, NounLocativePl,
+    NounVocativeSg, NounVocativePl,   
+    //verbs
+    VerbPres1S, VerbPres2S, VerbPres3S,  
+    VerbPres1P, VerbPres2P, VerbPres3SP, VerbPresImp,
+
+    VerbPast1MascS, VerbPast1FemS, VerbPast1NeuS, VerbPast1NVir, VerbPast1Vir,
+    VerbPast2MascS, VerbPast2FemS, VerbPast2NeuS, VerbPast2NVir, VerbPast2Vir,
+    VerbPast3MascS, VerbPast3FemS, VerbPast3NeuS, VerbPast3NVir, VerbPast3Vir, VerbPastImpersonal,
+
+    VerbCond1MascS, VerbCond1FemS, VerbCond1NeuS, VerbCond1NVir, VerbCond1Vir,
+    VerbCond2MascS, VerbCond2FemS, VerbCond2NeuS, VerbCond2NVir, VerbCond2Vir,
+    VerbCond3MascS, VerbCond3FemS, VerbCond3NeuS, VerbCond3NVir, VerbCond3Vir,
+
+    VerbImp1S, VerbImp1Pl, VerbImp2S, VerbImp2Pl, VerbImp31S, VerbImp3Pl, 
+    //participles
+    //adjectives
+    
 }
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
@@ -87,7 +104,8 @@ pub struct Word {
     pub lemma: Lemma,
     pub wiki_data: WikiContent,
     pub inflected_words: Vec<InflectionData>, // cat - pg - note
-    pub pages: Vec<Page>
+    pub pages: Vec<Page>,
+    pub pronounciation_base: String
 }
 
 #[derive(Clone, Debug)]
@@ -103,12 +121,6 @@ pub struct InflectionData {
     pub inflected_word: String,
     pub keys: String,
     pub notes: String,
-    pub pronounciation_base: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct Key {
-
 }
 
 #[derive(Clone, Debug)]
@@ -144,7 +156,7 @@ pub struct WikiContent {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ClientData {
+pub struct WebData {
     pub api_url: String,
     pub acc_tok: String
 }
