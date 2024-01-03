@@ -1,7 +1,7 @@
 use regex::Regex;
 use reqwest::Client;
 
-use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER, manipulation::process, InflectionData, Word};
+use crate::{find_line, raw_html, str_split, constants::HTML_PL_HEADER, manipulation::process, Word, wikt_text};
 
 //doesn't work with mult. etymology words
 pub async fn get_wrd_sect(client: &reqwest::Client, word: &str) -> i8 {
@@ -33,24 +33,17 @@ fn check_single_noun(word: &Word) {
     println!("    Checking: {}", word.lemma.word);
     //check pronounciation
     //check gender
-    let _ = check_lines(word);
-}
-
-fn check_lines(word: &Word) {
-    println!("{:?}", word.wiki_data.parse.html_text);
 }
 
 pub async fn check_wrd(client: &Client, wrd: &str) {
     let wrd_data = process(&client, &wrd).await.expect("ha");
     for inf in wrd_data.inflected_words {
-        let wrd = process(&client, &inf.inflected_word).await;
-        println!("    {}", inf.inflected_word);
+        let wrd = wikt_text(&client, &inf.inflected_word).await; 
         if wrd.is_none() {
-            println!("    NEED TO CREATE: {}", &inf.inflected_word);
+            println!("|   NEED TO CREATE: {}", &inf.inflected_word);
             continue;
         } else  {
-            println!("hallo");
-            let _ = check_single_noun(&wrd.expect("No-Err"));                
+            println!("|   Check: {}", &inf.inflected_word);
         }
     }
 }

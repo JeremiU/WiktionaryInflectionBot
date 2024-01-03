@@ -22,7 +22,8 @@ async fn edit_wiki_page(client: &Client, infl_wrd: &str, txt: &str, web_data: &W
     let params = &[("action", "edit"), ("title", &infl_wrd), 
     ("appendtext", &txt), ("summary", "Added inflection page"), ("tags", ""), ("bot", "1"), 
     ("contentmodel","wikitext"), ("token", &csrf_token)];
-    let _ = make_call(client, params, web_data).await;
+    println!("DEBUG!");
+    // let _ = make_call(client, params, web_data).await;
 }
 
 async fn make_call(client: &Client, params: &[(&str, &str)], web_data: &WebData) -> Result<String, Error> {
@@ -47,7 +48,7 @@ pub async fn upload_wrd(client: &Client, wrd: &str) {
     println!("\tgender: {:?}", wrd_data.lemma.gender);
     println!("\tclass: {:?}", wrd_data.lemma.class);
     for i in 0..wrd_data.pages.len() {
-        // let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
+        let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
         println!("Page: {:?}", wrd_data.inflected_words[i]);
     }
 }

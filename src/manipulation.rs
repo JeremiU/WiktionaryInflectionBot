@@ -147,7 +147,8 @@ pub async fn process(client: &reqwest::Client, word: &str) -> Option<Word> {
     let gender = gender(&wiki_data);
     let class = class(&wiki_data);
     let num_cat = num_cat(&wiki_data);
-    println!("{}", wiki_data.parse.word);
+
+
     let inflected_words = wrd_dupe_filter(find_links(&wiki_data, &class));
 
     let lemma = Lemma {word : word.clone(), gender, class, num_cat};
