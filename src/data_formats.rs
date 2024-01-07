@@ -1,36 +1,7 @@
 use serde::{Serialize, Deserialize};
 use strum::{EnumString, Display};
-use strum_macros::EnumIter;
 
 use crate::{NounNumericalCategory::*, WordGender::*, WordClass::*, match_txt};
-
-#[derive(Debug, Clone, EnumIter, EnumString, Display, Copy)]
-pub enum Inflection {
-    //nouns
-    NounNominativeSg, NounNominatePl, 
-    NounGenitiveSg, NounGenitivePl,
-    NounDativeSg, NounDativePl,
-    NounAccusativeSg, NounAccusativePl,
-    NounInstrumentalSg, NounInstrumentalPl,
-    NounLocativeSg, NounLocativePl,
-    NounVocativeSg, NounVocativePl,   
-    //verbs
-    VerbPres1S, VerbPres2S, VerbPres3S,  
-    VerbPres1P, VerbPres2P, VerbPres3SP, VerbPresImp,
-
-    VerbPast1MascS, VerbPast1FemS, VerbPast1NeuS, VerbPast1NVir, VerbPast1Vir,
-    VerbPast2MascS, VerbPast2FemS, VerbPast2NeuS, VerbPast2NVir, VerbPast2Vir,
-    VerbPast3MascS, VerbPast3FemS, VerbPast3NeuS, VerbPast3NVir, VerbPast3Vir, VerbPastImpersonal,
-
-    VerbCond1MascS, VerbCond1FemS, VerbCond1NeuS, VerbCond1NVir, VerbCond1Vir,
-    VerbCond2MascS, VerbCond2FemS, VerbCond2NeuS, VerbCond2NVir, VerbCond2Vir,
-    VerbCond3MascS, VerbCond3FemS, VerbCond3NeuS, VerbCond3NVir, VerbCond3Vir,
-
-    VerbImp1S, VerbImp1Pl, VerbImp2S, VerbImp2Pl, VerbImp31S, VerbImp3Pl, 
-    //participles
-    //adjectives
-    
-}
 
 #[derive(Debug, Clone, PartialEq, EnumString, Display, Copy)]
 pub enum WordClass {
@@ -137,22 +108,33 @@ pub struct WikiLink {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Parse {
-    #[serde(rename = "title")]
-    pub word: String,
-    // #[serde(rename = "pageid")]
-    // pub page_id: i32,
-    #[serde(rename = "text")]
-    pub html_text: String,
-    pub links: Vec<WikiLink>,
-    // pub showtoc: bool,
-    #[serde(rename = "wikitext")]
-    pub wiki_text: String,
+pub struct SectionInner {
+    pub title: String,
+    pub sections: Vec<SingleSection>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SingleSection {
+    #[serde(rename = "line")]
+    pub title: String,
+    pub index: String
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WikiSection {
+    #[serde(rename = "parse")]
+    pub inner: SectionInner
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WikiContent {
-    pub parse: Parse
+    #[serde(rename = "title")]
+    pub word: String,
+    #[serde(rename = "text")]
+    pub html_text: String,
+    pub links: Vec<WikiLink>,
+    #[serde(rename = "wikitext")]
+    pub wiki_text: String,
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,10 +1,10 @@
 use reqwest::{self, Error, Client};
-use serde_json::Value;
+use serde_json::{Value, Error as Err, from_str, from_value};
 
-use crate::{manipulation::process, WikiContent, WebData, util::client_data, fixes::check_wrd};
+use crate::{manipulation::process, WikiContent, WebData, util::client_data, fixes::check_wrd, link_gather::get_links, WikiSection, SingleSection};
 
 fn extract_csrf(json_str: &str) -> Option<String> {
-    let parsed: Result<Value, _> = serde_json::from_str(json_str);
+    let parsed: Result<Value, _> = from_str(json_str);
 
     if let Value::Object(obj) = parsed.expect("ERR") {
         let csrftoken = obj.get("query").unwrap().get("tokens").unwrap().get("csrftoken").unwrap(); 
@@ -22,8 +22,9 @@ async fn edit_wiki_page(client: &Client, infl_wrd: &str, txt: &str, web_data: &W
     let params = &[("action", "edit"), ("title", &infl_wrd), 
     ("appendtext", &txt), ("summary", "Added inflection page"), ("tags", ""), ("bot", "1"), 
     ("contentmodel","wikitext"), ("token", &csrf_token)];
-    println!("DEBUG!");
-    // let _ = make_call(client, params, web_data).await;
+    // println!("DEBUG: txt");
+    println!("{}", txt);
+    let _ = make_call(client, params, web_data).await;
 }
 
 async fn make_call(client: &Client, params: &[(&str, &str)], web_data: &WebData) -> Result<String, Error> {
@@ -47,50 +48,52 @@ pub async fn upload_wrd(client: &Client, wrd: &str) {
     println!("word: {}", wrd_data.lemma.word);
     println!("\tgender: {:?}", wrd_data.lemma.gender);
     println!("\tclass: {:?}", wrd_data.lemma.class);
-    for i in 0..wrd_data.pages.len() {
-        let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
-        println!("Page: {:?}", wrd_data.inflected_words[i]);
-    }
+
+    // for i in 0..wrd_data.pages.len() {
+    //     let _ = edit_wiki_page(&client, &wrd_data.pages[i].title, &wrd_data.pages[i].body, &web_data, &csrf_token).await;
+    //     println!("Page: {:?}", wrd_data.inflected_words[i]);
+    // }
 }
 
 pub async fn is_polish_entry(client: &Client, wrd: &str) -> bool {
     let content = wikt_text(client, wrd).await.unwrap();
-    return content.parse.wiki_text.contains("==Polish==");
+    return content.wiki_text.contains("==Polish==");
 }
 
 pub async fn wikt_text(client: &Client, wrd: &str) -> Option<WikiContent> {
     let web_data = client_data();
-    
-    let params = &[("action","parse"), ("page", &wrd), 
-    ("prop", "sections|links|wikitext|text"), ("disablelimitreport", "1"),
-    ("preview","1")];
+
+    let params = &[("action","parse"), ("page", &wrd), ("prop","sections"),
+    ("disablelimitreport", "1"), ("preview","1")];
 
     let str = make_call(&client, params, &web_data).await.expect("Incorrect call!");
-
-    let res: Result<WikiContent, serde_json::Error> = serde_json::from_str(&str);
-
-    if res.is_ok() {
-        return Some(res.expect("msg"));
-    } else {
+    let val: Result<WikiSection, Err> = from_str(&str);
+    let x: Vec<SingleSection> = val.expect("val?").inner.sections.into_iter().filter(|f| f.title.eq("Polish")).collect();
+    if x.len() == 0 {
+        println!("No polish entry!");
         return None;
     }
+    
+    let params = &[("action","parse"), ("page", &wrd), ("section", &x[0].index),
+    ("prop", "links|wikitext|text"), ("disablelimitreport", "1"),
+    ("preview","1")];
+
+    let json: Value = from_str(&make_call(&client, params, &web_data).await.expect("Incorrect call!")).expect("JSON");
+    return from_value(json.get("parse").expect("No parse?").clone()).ok();
 }
 
 pub async fn operations(client: &Client, wrd: &str) {
+    println!("wrd: {}", wrd);
     let content = wikt_text(client, wrd).await;
-    if content.is_none() {
-        println!("Entry \'{}\' doesn't exist!", wrd);
-    } else {
+
+    println!("     PL Exists: {}", !content.is_none());
+    if !content.is_none() {
         println!("Entry \'{}\':", wrd);
-        let wrd_data = process(&client, &wrd).await.expect("msg-");
-        let is_polish_entry = is_polish_entry(client, wrd).await;
-        
-        println!("  Is Polish: {}", is_polish_entry);
-        if !is_polish_entry {
-            return;
-        }
-        println!("  Pronounciation: {}", wrd_data.pronounciation_base);
-        println!("  Class: {}", wrd_data.lemma.class);
-        let _ = check_wrd(client, wrd).await;
+        get_links(content.expect("pg"), wrd);
+        // println!("Page links: {:#?}", get_links(content.expect("pg"), wrd));    
+        // let wrd_data = process(&client, &wrd).await.expect("msg-");        
+        // println!("  Pronounciation: {}", wrd_data.pronounciation_base);
+        // println!("  Class: {}", wrd_data.lemma.class);
+        // let _ = check_wrd().await;    
     }
 }

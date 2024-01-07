@@ -71,6 +71,14 @@ pub fn extract_txt(key: &str, val: &str) -> String {
     return "".to_owned();
 }
 
+pub fn until_char(str: &str, stop_flag: &str) -> String {
+    if str.contains(stop_flag) {
+        return str[0..str.find(stop_flag).unwrap()].to_owned();
+    } else {
+        return str.to_owned();
+    } 
+}
+
 pub fn sys_time() -> u128 {
     return match SystemTime::now().duration_since(UNIX_EPOCH) {
         Ok(duration) => {

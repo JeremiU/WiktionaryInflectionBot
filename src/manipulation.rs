@@ -36,25 +36,25 @@ fn table(k: &Vec<String>) -> Vec<String> {
 }
 
 fn gender(wiki_data: &WikiContent) -> WordGender {
-    return WordGender::match_txt(&wiki_data.parse.wiki_text);
+    return WordGender::match_txt(&wiki_data.wiki_text);
 }
 
 fn class(wiki_data: &WikiContent) -> WordClass {
-    return WordClass::match_txt(&wiki_data.parse.wiki_text);
+    return WordClass::match_txt(&wiki_data.wiki_text);
 }
 
 fn pronounciation(wiki_data: &WikiContent) -> String {
-    let pro = extract_txt(&wiki_data.parse.wiki_text, r"\{\{pl-p\|([^|]*)\}\}"); 
+    let pro = extract_txt(&wiki_data.wiki_text, r"\{\{pl-p\|([^|]*)\}\}"); 
     return if pro.starts_with("a=") {"".to_owned()} else {pro};
 }
 
 fn num_cat(wiki_data: &WikiContent) -> NounNumericalCategory {
-    let wiki_text = &wiki_data.parse.wiki_text;
+    let wiki_text = &wiki_data.wiki_text;
     return NounNumericalCategory::match_txt(&wiki_text);
 }
 
 fn find_links(wiki_data: &WikiContent, class: &WordClass) -> Vec<InflectionData> {
-    let bit = table(&entry(&wiki_data.parse.html_text));
+    let bit = table(&entry(&wiki_data.html_text));
     let to_check: &mut Vec<InflectionData> = &mut Vec::new();
     let p: &mut Vec<(&str, i32)> = &mut Vec::new();
    
@@ -121,7 +121,7 @@ fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
 
 fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
     let mut infl_forms = Vec::new();
-    let txt = &wiki_data.parse.wiki_text;
+    let txt = &wiki_data.wiki_text;
     let class = class(wiki_data);
     let num_cat = num_cat(wiki_data);
 
@@ -147,7 +147,6 @@ pub async fn process(client: &reqwest::Client, word: &str) -> Option<Word> {
     let gender = gender(&wiki_data);
     let class = class(&wiki_data);
     let num_cat = num_cat(&wiki_data);
-
 
     let inflected_words = wrd_dupe_filter(find_links(&wiki_data, &class));
 

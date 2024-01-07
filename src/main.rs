@@ -5,6 +5,7 @@ mod online;
 mod data_formats;
 mod page_generation;
 mod fixes;
+mod link_gather;
 
 pub use {constants::*, manipulation::*, online::*, util::*, data_formats::{WordGender::*, *}};
 
@@ -14,13 +15,13 @@ async fn main() -> () {
     let client = reqwest::Client::new();
 
     //fix if page exists in different language
-    let c = vec!["pojutrze",/*"trzcina","serwis","autoserwis","autonaprawa",""*/];
+    let c = vec![];
 
     for i in &c {
         let _ = online::upload_wrd(&client, *i).await;
     }
 
-    // let txt = operations(&client, "włoszczyzny").await;
+    let txt = operations(&client, "pan").await;
     // let txt = operations(&client, "bzdura").await;
     // let txt = operations(&client, "anielskie włosy").await;
     // let txt = operations(&client, "talent").await;
