@@ -1,6 +1,5 @@
 use crate::{WikiContent, WikiLink, util::extract_txt, until_char};
 use edit_distance::edit_distance;
-use regex::Regex;
 
 pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
     fn filter_link(title: &str, bad_keys: Vec<&str>) -> bool {
@@ -53,13 +52,21 @@ pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
     }
 
     let inf_tmps = vec!["noms=","gens=","dats=","accs=","inss=","vocs=","locs=","nomp=","genp=","datp=","accp=","insp=","vocp=","locp="];
+    let x = v.replace("{{", "").replace("}}", "");
     
     for inf_tmp in inf_tmps {
         if v.contains(inf_tmp) {
-            let x = v.replace("{{", "").replace("}}", "");
             let man_input = until_char(extract_txt(&x, format!("\\|{}([^<]*)", inf_tmp).as_str()).as_str(), "|");
             //TODO: use manual input to filter
         }
     }
+
+    let dec_tmps = vec![""];
+
+    for dec_tmp in dec_tmps {
+        // if 
+    }
+    let root = extract_txt(&x, format!("\\|{}([^<]*)", inf_tmp).as_str()).as_str();
+
     return parsed;
 }

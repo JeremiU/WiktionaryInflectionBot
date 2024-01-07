@@ -10,7 +10,6 @@ fn extract_csrf(json_str: &str) -> Option<String> {
         let csrftoken = obj.get("query").unwrap().get("tokens").unwrap().get("csrftoken").unwrap(); 
         return Some(csrftoken.as_str().unwrap().to_string());
     }
-    None
 }
 
 async fn csrf_token(client: &Client, web_data: &WebData) -> Result<String, Error> {
