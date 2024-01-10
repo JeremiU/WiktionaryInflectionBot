@@ -64,9 +64,8 @@ pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
     let dec_tmps = vec![""];
 
     for dec_tmp in dec_tmps {
-        // if 
+        let root = extract_txt(&x, format!("\\|{}([^<]*)", dec_tmp).as_str()).as_str();
     }
-    let root = extract_txt(&x, format!("\\|{}([^<]*)", inf_tmp).as_str()).as_str();
 
     return parsed;
 }

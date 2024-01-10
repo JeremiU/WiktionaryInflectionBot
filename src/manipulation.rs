@@ -157,5 +157,5 @@ pub async fn process(client: &reqwest::Client, word: &str) -> Option<Word> {
     for inflected_word in &inflected_words {
         pgs.push(gen_pg(&lemma, &inflected_word));
     }
-    return Some(Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone(), pronounciation_base});
+    return Some(Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone(), pronunciation_base: pronounciation_base });
 }

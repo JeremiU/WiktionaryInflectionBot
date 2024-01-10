@@ -6,9 +6,11 @@ use crate::{manipulation::process, WikiContent, WebData, util::client_data, fixe
 fn extract_csrf(json_str: &str) -> Option<String> {
     let parsed: Result<Value, _> = from_str(json_str);
 
-    if let Value::Object(obj) = parsed.expect("ERR") {
-        let csrftoken = obj.get("query").unwrap().get("tokens").unwrap().get("csrftoken").unwrap(); 
-        return Some(csrftoken.as_str().unwrap().to_string());
+    return if let Value::Object(obj) = parsed.expect("ERR") {
+        let csrftoken = obj.get("query").unwrap().get("tokens").unwrap().get("csrftoken").unwrap();
+        Some(csrftoken.as_str().unwrap().to_string())
+    } else {
+        None
     }
 }
 

@@ -76,7 +76,7 @@ pub struct Word {
     pub wiki_data: WikiContent,
     pub inflected_words: Vec<InflectionData>, // cat - pg - note
     pub pages: Vec<Page>,
-    pub pronounciation_base: String
+    pub pronunciation_base: String
 }
 
 #[derive(Clone, Debug)]
@@ -141,12 +141,4 @@ pub struct WikiContent {
 pub struct WebData {
     pub api_url: String,
     pub acc_tok: String
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Samples {
-    pub count: i32,
-    pub nouns: Vec<String>,
-    pub adjectives: Vec<String>,
-    pub verbs: Vec<String>
 }
