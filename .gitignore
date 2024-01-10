@@ -21,3 +21,5 @@ Cargo.lock
 WebData.json
 
 _.txt
+
+.idea/
