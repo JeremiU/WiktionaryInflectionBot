@@ -13,11 +13,11 @@ pub use {online::*, util::*, data_formats::{WordGender::*, *}, bookkeeper::get_k
 #[tokio::main]
 async fn main() -> () {
     let start_time = sys_time();
-    let client = reqwest::Client::new();
+    let _client = reqwest::Client::new();
 
     //fix if page exists in different language
-    let add_list = vec!["a", "b", "c"];
-    for word in &add_list {
+    let add_list = vec![""];
+    for _word in &add_list {
         // let _ = upload_wrd(&client, *word).await;
     }
 
@@ -35,7 +35,7 @@ async fn main() -> () {
         bookkeeper::increment_count(add_list.len() as i32);
         bookkeeper::update_ts(end_time);
         bookkeeper::append_list(add_list);
-        println!("Updated Count: {}", bookkeeper::get_count());
+        println!("Updated Total: {}", bookkeeper::get_count());
         println!("Last Updated: {}", bookkeeper::time());
     }
 }

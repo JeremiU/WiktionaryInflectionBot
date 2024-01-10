@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 use chrono_tz::America::New_York;
 use serde::{Deserialize, Serialize};
 use serde_json::from_str;
+use crate::constants::err_code;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Bookkeeper {
@@ -17,11 +18,11 @@ pub fn get_keeper() -> Bookkeeper {
     let mut dir = String::new();
     match env::current_dir() {
         Ok(path) => {
-            dir = path.to_str().unwrap().to_owned();
+            dir = path.to_str().expect(&*err_code("Bookkeeper get 1")).to_owned();
         },
-        Err(e) => println!("Error getting current directory: {}", e),
+        Err(_) => println!("{}", err_code("Bookkeeper get 2")),
     }
-    return from_str(&read_to_string(format!("{}//bookkeeper.json", dir)).expect("err1")).expect("err2");
+    return from_str(&read_to_string(format!("{dir}//bookkeeper.json")).expect(&*err_code("Bookkeeper get 3"))).expect(&*err_code("Bookkeeper get 4"));
 }
 
 pub fn get_ts() -> u128 {
@@ -47,16 +48,16 @@ pub fn update_ts(ts: u128) {
 }
 
 pub fn append_list(words: Vec<&str>) {
-    let mut rep = "\n".to_owned();
+    let mut rep = String::new();
     for word in words {
-        rep.push_str(format!("\"{}\", ",word).as_str());
+        rep.push_str(format!("\"{word}\", ").as_str());
     }
 
     let mut file = OpenOptions::new()
         .write(true)
         .append(true)
-        .open("bookkeeper.txt").expect("Err opening bookkeeper.txt !");
-    file.write_all(rep.as_bytes()).expect("Couldn't write to bookkeeper.txt !");
+        .open("bookkeeper.txt").expect(&*err_code("Bookkeeper.txt 1"));
+    file.write_all(rep.as_bytes()).expect(&*err_code("Bookkeeper.txt 2"));
 }
 
 pub fn time() -> String {
@@ -65,7 +66,7 @@ pub fn time() -> String {
 }
 
 fn write(bookkeeper: Bookkeeper) {
-    let json = serde_json::to_string(&bookkeeper).unwrap();
-    let mut file = File::create("bookkeeper.json").unwrap();
-    file.write_all(json.as_bytes()).unwrap();
+    let json = serde_json::to_string(&bookkeeper).expect(&*err_code("Bookkeeper write 1"));
+    let mut file = File::create("bookkeeper.json").expect(&*err_code("Bookkeeper write 2"));
+    file.write_all(json.as_bytes()).expect(&*err_code("Bookkeeper write 3"));
 }

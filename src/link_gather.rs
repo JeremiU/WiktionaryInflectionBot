@@ -35,14 +35,14 @@ pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
                 k = k - 1;
             }
         }
-        if j == k {
-            return lines[j].to_owned();
+        return if j == k {
+            lines[j].to_owned()
         } else {
-            return lines[j..k].join("\n");
+            lines[j..k].join("\n")
         }
     }
 
-    let mut parsed: Vec<WikiLink> = content.links.into_iter().filter(|x| filter_link(x.word.as_str(), vec!["File:", "Wikipedia","Wiktionary:","Appendix:","Rhymes:"])).collect();
+    let mut parsed: Vec<WikiLink> = content.links.into_iter().filter(|x| filter_link(&x.word, vec!["File:", "Wikipedia","Wiktionary:","Appendix:","Rhymes:"])).collect();
     parsed.sort_by_key(|word| edit_distance(&word.word, wrd));
 
     let v = filter_two(&content.wiki_text);
@@ -56,7 +56,7 @@ pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
     
     for inf_tmp in inf_tmps {
         if v.contains(inf_tmp) {
-            let man_input = until_char(extract_txt(&x, format!("\\|{}([^<]*)", inf_tmp).as_str()).as_str(), "|");
+            let _man_input = until_char(&*extract_txt(&x, format!("\\|{inf_tmp}([^<]*)").as_str()), "|");
             //TODO: use manual input to filter
         }
     }
@@ -64,8 +64,7 @@ pub fn get_links(content: WikiContent, wrd: &str) -> Vec<WikiLink> {
     let dec_tmps = vec![""];
 
     for dec_tmp in dec_tmps {
-        let root = extract_txt(&x, format!("\\|{}([^<]*)", dec_tmp).as_str()).as_str();
+        let _root = extract_txt(&x, format!("\\|{dec_tmp}([^<]*)").as_str());
     }
-
     return parsed;
 }
