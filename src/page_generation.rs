@@ -24,7 +24,7 @@ fn gen_pg_hd(class: &WordClass, notes: &str) -> String {
     page_markup.push_str("\n");
     page_markup.push_str(&*format!("==={}===\n", class.to_string().replace("_", " ")));
 
-    return page_markup.to_owned();
+    page_markup.to_owned()
 }
 
 fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
@@ -68,7 +68,7 @@ fn gen_noun(lemma: &Lemma, inflected_data: &InflectionData) -> Page {
         _ => {},
     }
 
-    return Page {title: inflected_data.inflected_word.to_owned(), body: page_markup};
+    Page {title: inflected_data.inflected_word.to_owned(), body: page_markup}
 }
 
 fn gen_adj(_lemma: &Lemma, inflected_data: &InflectionData) -> Page {
@@ -80,10 +80,9 @@ fn gen_adj(_lemma: &Lemma, inflected_data: &InflectionData) -> Page {
             "nom|voc|v_pl" => {},
             _ => {}
         }
-
         println!("{}: {key}", inflected_data.inflected_word);
     }
-    return Page {title: inflected_data.inflected_word.to_owned(), body: page_markup};
+    Page {title: inflected_data.inflected_word.to_owned(), body: page_markup}
 }
 
 pub fn gen_pg(lemma: &Lemma, inflected_data: &InflectionData) -> Page {

@@ -96,5 +96,10 @@ pub fn client_data() -> WebData {
     let mut file = File::open(file_path).expect(&*err_code("Unable to read WebData.json"));
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect(&*err_code("Unable to read WebData.json"));
-    return serde_json::from_value(serde_json::from_str(&contents).expect(&*err_code("CD_1"))).expect(&*err_code("CD_2"));
+    serde_json::from_value(serde_json::from_str(&contents).expect(&*err_code("CD_1"))).expect(&*err_code("CD_2"))
+}
+
+pub fn has_non_polish(s: &str) -> bool {
+    let polish_letters: [char; 35] = ['a', 'ą', 'b', 'c', 'ć', 'd', 'e', 'ę', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'ł', 'm', 'n', 'ń', 'o', 'ó', 'p', 'q', 'r', 's', 'ś', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'ź', 'ż'];
+    s.chars().any(|c| !polish_letters.contains(&c))
 }

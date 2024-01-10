@@ -14,7 +14,7 @@ pub enum WordClass {
 
 impl WordClass {
     pub fn match_txt(str: &str) -> WordClass {
-        return match_txt(&[(vec!("===Noun==="), Noun), (vec!("===Adjective==="), Adjective), (vec!("===Verb==="), Verb), (vec!("===Proper noun==="), ProperNoun)], WordClassError, false, str);
+        match_txt(&[(vec!("===Noun==="), Noun), (vec!("===Adjective==="), Adjective), (vec!("===Verb==="), Verb), (vec!("===Proper noun==="), ProperNoun)], WordClassError, false, str)
     }
 }
 
@@ -31,7 +31,7 @@ pub enum WordGender {
 
 impl WordGender {
     pub fn value(&self) -> &str {
-        return match *self {
+        match *self {
             Feminine => "f",
             Neuter => "n",
             MasculinePers => "m-pr",
@@ -39,12 +39,12 @@ impl WordGender {
             MasculineInam => "m-in",
             NVir => "nv",
             _ => "",
-        };
+        }
     }
     pub fn match_txt(str: &str) -> WordGender {
-        return match_txt(&[(vec!("noun|nv", "g=nv"), NVir), (vec!("g=f", "noun|f", "noun-f"), Feminine),
+        match_txt(&[(vec!("noun|nv", "g=nv"), NVir), (vec!("g=f", "noun|f", "noun-f"), Feminine),
         (vec!("m-in"), MasculineInam), (vec!("m-an"), MasculineAnim), (vec!("m-pr"), MasculinePers), 
-        (vec!("noun|n", "g=n"), Neuter)], WordGenderError, false, str);
+        (vec!("noun|n", "g=n"), Neuter)], WordGenderError, false, str)
     }
 }
 
@@ -58,15 +58,15 @@ pub enum NounNumericalCategory {
 
 impl NounNumericalCategory {
     pub fn size(&self) -> usize {
-        return match *self {
+        match *self {
             Singular | Plural => 7,
             Both => 14,
             NonNoun => 0
         }
     }
     pub fn match_txt(str: &str) -> NounNumericalCategory {
-        return if str.contains("tatum=p") || str.contains("num=p") {Plural}
-        else if str.contains("tatum=s") || str.contains("num=s") {Singular} else {Both};    
+        if str.contains("tatum=p") || str.contains("num=p") {Plural}
+        else if str.contains("tatum=s") || str.contains("num=s") {Singular} else {Both}
     }
 }
 

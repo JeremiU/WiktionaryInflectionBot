@@ -15,5 +15,5 @@ pub const ID_PAIRS_VB_IMP: [(&str, i32); 36] = [("v_1_sg_pres", 34), ("v_1_pl_pr
 pub const ID_PAIRS_VB_PFT: [(&str, i32); 21] = [("v_1_sg_pres", 34), ("v_1_pl_pres", 36), ("v_1_sg_m_past", 62), ("v_1_sg_f_past", 64), ("v_1_pl_mp_past", 68), ("v_1_pl_nv_past", 70), ("v_2_sg_pres", 41), ("v_2_pl_pres", 43), ("v_2_sg_m_past", 75), ("v_2_sg_f_past", 77), ("v_2_pl_mp_past", 81), ("v_2_pl_nv_past", 83), ("v_3_sg_pres", 48), ("v_3_pl_pres", 50), ("v_3_sg_m_past", 88), ("v_3_sg_f_past", 90), ("v_3_pl_mp_past", 94), ("v_3_pl_nv_past", 96), ("v_pass_adj_par", 175), ("v_ant_adv_par", 188), ("v_noun", 193)];
 
 pub fn err_code(id: &str) -> String {
-    return format!("ERROR: {id}");
+    format!("ERROR: {id}")
 }

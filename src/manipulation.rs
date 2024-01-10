@@ -21,7 +21,7 @@ fn entry(input: &str) -> Vec<String> {
     } 
     let end = start+next_lang_start as usize;
 
-    return (&lines[start..end]).to_vec();       
+    (&lines[start..end]).to_vec()
 }
 
 /// Narrows down the input block into just the inflection table data. If you want to print to find new indices, do it here
@@ -32,25 +32,24 @@ fn table(k: &Vec<String>) -> Vec<String> {
     let g = k[tbl_a_indx..].to_vec();
     let tbl_b_indx = find_line(&g, "</table>").try_into().expect(&*err_code("Man:Table 2"));
 
-    return g[0..tbl_b_indx].to_vec();
+    g[0..tbl_b_indx].to_vec()
 }
 
 fn gender(wiki_data: &WikiContent) -> WordGender {
-    return WordGender::match_txt(&wiki_data.wiki_text);
+    WordGender::match_txt(&wiki_data.wiki_text)
 }
 
 fn class(wiki_data: &WikiContent) -> WordClass {
-    return WordClass::match_txt(&wiki_data.wiki_text);
+    WordClass::match_txt(&wiki_data.wiki_text)
 }
 
 fn pronunciation(wiki_data: &WikiContent) -> String {
     let pro = extract_txt(&wiki_data.wiki_text, r"\{\{pl-p\|([^|]*)\}\}"); 
-    return if pro.starts_with("a=") {String::new()} else {pro.to_owned()};
+    if pro.starts_with("a=") {String::new()} else {pro.to_owned()}
 }
 
 fn num_cat(wiki_data: &WikiContent) -> NounNumericalCategory {
-    let wiki_text = &wiki_data.wiki_text;
-    return NounNumericalCategory::match_txt(&wiki_text);
+    NounNumericalCategory::match_txt(&wiki_data.wiki_text)
 }
 
 fn find_links(wiki_data: &WikiContent, class: &WordClass) -> Vec<InflectionData> {
@@ -117,7 +116,8 @@ fn wrd_dupe_filter(bit: Vec<InflectionData>) -> Vec<InflectionData> {
             filtered.push(id);        
         }
     }
-    return filtered.to_vec();
+
+    filtered.to_vec()
 }
 
 fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
@@ -130,8 +130,9 @@ fn get_noun_infl_wt(wiki_data: &WikiContent) -> Vec<InflectionData> {
 
     if infl_forms.len() != num_cat.size() {
         panic!("Incorrect arr size!");
-    } 
-    return infl_forms;
+    }
+
+    infl_forms
 }
 
 /// Takes in a word, returns a pair (word, Vec<(subword, subtype)>, Gender, Type)
@@ -158,5 +159,5 @@ pub async fn process(client: &reqwest::Client, word: &str) -> Option<Word> {
     for inflected_word in &inflected_words {
         pgs.push(gen_pg(&lemma, &inflected_word));
     }
-    return Some(Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone(), pronunciation_base });
+    Some(Word {lemma: lemma.clone(), wiki_data, inflected_words, pages : pgs.clone(), pronunciation_base })
 }

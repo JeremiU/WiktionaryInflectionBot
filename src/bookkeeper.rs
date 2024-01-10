@@ -22,29 +22,29 @@ pub fn get_keeper() -> Bookkeeper {
         },
         Err(_) => println!("{}", err_code("Bookkeeper get 2")),
     }
-    return from_str(&read_to_string(format!("{dir}//bookkeeper.json")).expect(&*err_code("Bookkeeper get 3"))).expect(&*err_code("Bookkeeper get 4"));
+    from_str(&read_to_string(format!("{dir}//bookkeeper.json")).expect(&*err_code("Bookkeeper get 3"))).expect(&*err_code("Bookkeeper get 4"))
 }
 
 pub fn get_ts() -> u128 {
-    return get_keeper().last_updated;
+    get_keeper().last_updated
 }
 
 pub fn get_count() -> i32 {
-    return get_keeper().count;
+    get_keeper().count
 }
 
 pub fn increment_count(amt: i32) {
     write(Bookkeeper {
         count: get_count() + amt,
         last_updated: get_ts(),
-    });
+    })
 }
 
 pub fn update_ts(ts: u128) {
     write(Bookkeeper {
         count: get_count(),
         last_updated: ts,
-    });
+    })
 }
 
 pub fn append_list(words: Vec<&str>) {
@@ -57,16 +57,16 @@ pub fn append_list(words: Vec<&str>) {
         .write(true)
         .append(true)
         .open("bookkeeper.txt").expect(&*err_code("Bookkeeper.txt 1"));
-    file.write_all(rep.as_bytes()).expect(&*err_code("Bookkeeper.txt 2"));
+    file.write_all(rep.as_bytes()).expect(&*err_code("Bookkeeper.txt 2"))
 }
 
 pub fn time() -> String {
     let datetime: DateTime<Utc> = (UNIX_EPOCH + Duration::from_nanos(get_ts() as u64)).into();
-    return datetime.with_timezone(&New_York).format("%Y-%m-%d %H:%M:%S").to_string();
+    datetime.with_timezone(&New_York).format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
 fn write(bookkeeper: Bookkeeper) {
     let json = serde_json::to_string(&bookkeeper).expect(&*err_code("Bookkeeper write 1"));
     let mut file = File::create("bookkeeper.json").expect(&*err_code("Bookkeeper write 2"));
-    file.write_all(json.as_bytes()).expect(&*err_code("Bookkeeper write 3"));
+    file.write_all(json.as_bytes()).expect(&*err_code("Bookkeeper write 3"))
 }

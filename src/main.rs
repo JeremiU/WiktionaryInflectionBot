@@ -4,24 +4,23 @@ mod constants;
 mod online;
 mod data_formats;
 mod page_generation;
-mod fixes;
 mod link_gather;
 mod bookkeeper;
 
-pub use {online::*, util::*, data_formats::{WordGender::*, *}, bookkeeper::get_keeper};
+pub use {online::*, util::*, data_formats::{WordGender::*, *}};
 
 #[tokio::main]
 async fn main() -> () {
     let start_time = sys_time();
-    let _client = reqwest::Client::new();
+    let client = reqwest::Client::new();
 
     //fix if page exists in different language
-    let add_list = vec![""];
+    let add_list = vec![];
     for _word in &add_list {
         // let _ = upload_wrd(&client, *word).await;
     }
 
-    // let txt = operations(&client, "pan").await;
+    let _txt = operations(&client, "pan").await;
     // let txt = operations(&client, "bzdura").await;
     // let txt = operations(&client, "anielskie włosy").await;
     // let txt = operations(&client, "talent").await;

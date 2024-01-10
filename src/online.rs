@@ -7,7 +7,7 @@ use crate::constants::err_code;
 fn extract_csrf(json_str: &str) -> Option<String> {
     let parsed: Result<Value, _> = from_str(json_str);
 
-    return if let Value::Object(obj) = parsed.expect("ERR") {
+    if let Value::Object(obj) = parsed.expect("ERR") {
         let csrftoken = obj.get("query").expect(&*err_code("CSRF 1")).get("tokens").
             expect(&*err_code("CSRF 2")).get("csrftoken").expect(&*err_code("CSRF 3"));
         Some(csrftoken.to_string())
@@ -36,11 +36,9 @@ async fn make_call(client: &Client, params: &[(&str, &str)], web_data: &WebData)
 
     let response = client.post(&web_data.api_url)
     .header("Authorization", format!("Bearer {}", &web_data.acc_tok))
-    .form(&params)
-    .send()
-    .await?;
+    .form(&params).send().await?;
 
-    return Ok(response.text().await?);
+    Ok(response.text().await?)
 }
 
 pub async fn upload_wrd(client: &Client, wrd: &str) {
@@ -59,8 +57,7 @@ pub async fn upload_wrd(client: &Client, wrd: &str) {
 }
 
 pub async fn is_polish_entry(client: &Client, wrd: &str) -> bool {
-    let content = wiki_text(client, wrd).await.expect(&*err_code("IS_PL"));
-    return content.wiki_text.contains("==Polish==");
+    wiki_text(client, wrd).await.expect(&*err_code("IS_PL")).wiki_text.contains("==Polish==")
 }
 
 pub async fn wiki_text(client: &Client, wrd: &str) -> Option<WikiContent> {
@@ -91,9 +88,9 @@ pub async fn operations(client: &Client, wrd: &str) {
 
     println!("     PL Exists: {}", !content.is_none());
     if !content.is_none() {
+        let extracted_content = &content.expect(&*err_code("OP 1"));
         println!("Entry \'{wrd}\':");
-        get_links(content.expect(&*err_code("OP 1")), wrd);
-        println!("Page links: {:#?}", get_links(content.expect(&*err_code("OP 2")), wrd));
+        println!("Page links: {:#?}", get_links(extracted_content, wrd));
         // let wrd_data = process(&client, &wrd).await.expect(&*err_code("OP 3"));
         // println!("  Pronunciation: {}", wrd_data.pronunciation_base);
         // println!("  Class: {}", wrd_data.lemma.class);
