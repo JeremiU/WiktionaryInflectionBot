@@ -5,8 +5,7 @@ use crate::{InflectionData, WebData};
 use crate::constants::err_code;
 
 pub async fn raw_html(client: &reqwest::Client, word: &str) -> String {
-    let response = client.get(format!("https://en.wiktionary.org/wiki/{word}#Polish"))
-    .send()
+    let response = client.get(format!("https://en.wiktionary.org/wiki/{word}#Polish")).send()
     .await.expect(&*err_code("HTML 1")).text().await.expect(&*err_code("HTML 2"));
 
     let document = scraper::Html::parse_document(&response);

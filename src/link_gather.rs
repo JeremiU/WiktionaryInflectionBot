@@ -40,9 +40,30 @@ pub fn get_links(content: &WikiContent, _wrd: &str) -> Vec<WikiLink> {
         }
     }
 
-    let txt = filter_two(&content.wiki_text.to_owned());
+    let txt = filter_two(&content.wiki_text.to_owned()).replace("{","").replace("}","");
     if txt.contains("nolinks") {
         return Vec::new();
+    }
+
+    let parts: Vec<&str> = txt.split("|").collect();
+
+    //Have fun reading !
+    //Complete documentation:
+    //      https://en.wiktionary.org/wiki/Module:pl-noun
+    //Basic documentation (LACKING):
+    //      https://en.wiktionary.org/wiki/Category:Polish_noun_inflection-table_templates
+    match parts[0] {
+        "pl-decl-noun-m-in" => {}
+        "pl-decl-noun-m-an" => {}
+        "pl-decl-noun-m-pr" => {
+            println!("Wow: {:?}", txt.split("|").collect::<Vec<&str>>());
+            println!("Nominative | SG: {} \\ PL: {}", parts[4], format!("{}/{}{}y", parts[3], parts[1], parts[2]));
+        }
+        "pl-decl-noun-f" => {}
+        "pl-decl-noun-f-adj" => {}
+        "pl-decl-noun-n" => {}
+        "pl-decl-noun-n-adj" => {}
+        _ => {}
     }
 
     let mut parsed: Vec<WikiLink> = content.links.clone().into_iter().filter(|x| filter_link(&x.word, vec!["File:", "Wikipedia","Wiktionary:","Appendix:","Rhymes:", "\\"])).collect();
@@ -50,18 +71,11 @@ pub fn get_links(content: &WikiContent, _wrd: &str) -> Vec<WikiLink> {
     // parsed.sort_by_key(|word| edit_distance(&word.word, wrd));
 
     let inf_tmps = vec!["noms=","gens=","dats=","accs=","inss=","vocs=","locs=","nomp=","genp=","datp=","accp=","insp=","vocp=","locp="];
-    let x = txt.replace("{{", "").replace("}}", "");
     for inf_tmp in inf_tmps {
         if txt.contains(inf_tmp) {
-            let _man_input = until_char(&*extract_txt(&x, format!("\\|{inf_tmp}([^<]*)").as_str()), "|");
+            let _man_input = until_char(&*extract_txt(&txt, format!("\\|{inf_tmp}([^<]*)").as_str()), "|");
             //TODO: use manual input to filter
         }
-    }
-
-    let dec_tmps = vec!["pl-decl-noun-m-in", "pl-decl-noun-m-an","pl-decl-noun-m-pr","pl-decl-noun-f","pl-decl-noun-n","pl-decl-noun-f-adj","pl-decl-noun-n-adj"];
-
-    for dec_tmp in dec_tmps {
-        let _root = extract_txt(&x, format!("\\|{dec_tmp}([^<]*)").as_str());
     }
     return parsed;
 }
